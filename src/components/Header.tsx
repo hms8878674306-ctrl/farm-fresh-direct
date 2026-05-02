@@ -1,9 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ShoppingCart, Leaf, Mic, MessageCircle, LayoutDashboard } from "lucide-react";
+import { ShoppingCart, Leaf, MessageCircle, LayoutDashboard, LogIn, LogOut, User as UserIcon } from "lucide-react";
 import { useCart, cartCount } from "@/lib/cart-store";
 import { useState, useEffect } from "react";
 import { CartDrawer } from "./CartDrawer";
 import { VoiceSearch } from "./VoiceSearch";
+import { useAuth } from "@/lib/auth-context";
 
 export function Header() {
   const s = useCart();
@@ -11,6 +12,7 @@ export function Header() {
   const [openCart, setOpenCart] = useState(false);
   const [bumped, setBumped] = useState(false);
   const loc = useLocation();
+  const { user, signOut } = useAuth();
 
   useEffect(() => { if (count > 0) { setBumped(true); const t = setTimeout(() => setBumped(false), 400); return () => clearTimeout(t); } }, [count]);
 
@@ -46,6 +48,16 @@ export function Header() {
             <Link to="/dashboard" className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-muted">
               <LayoutDashboard className="h-5 w-5" />
             </Link>
+            {user ? (
+              <button onClick={() => signOut()} title={user.email || "Sign out"}
+                className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted" aria-label="Sign out">
+                <LogOut className="h-5 w-5" />
+              </button>
+            ) : (
+              <Link to="/login" className="hidden sm:inline-flex h-10 px-4 items-center gap-2 rounded-full border border-border hover:bg-muted text-sm font-semibold">
+                <LogIn className="h-4 w-4" /> Sign in
+              </Link>
+            )}
             <button
               onClick={() => setOpenCart(true)}
               className={`relative h-10 px-4 inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-soft transition ${bumped ? "animate-bounce-in" : ""}`}
