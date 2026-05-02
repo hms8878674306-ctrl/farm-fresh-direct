@@ -33,13 +33,19 @@ function Checkout() {
       total, method, name, phone, addr,
       userId: user?.uid || null,
       userEmail: user?.email || null,
-      status: "placed",
+      status: "confirmed",
+      stage: 0,
+      etaMinutes: 30,
+      rider: { name: "Suresh Kumar", rating: 4.9, phone: "+91 98765 43210" },
+      statusHistory: [
+        { stage: 0, label: "Order Confirmed", at: Date.now() },
+      ],
       createdAt: serverTimestamp(),
     };
     try {
       const ref = await addDoc(collection(db, "orders"), order);
       if (typeof window !== "undefined") {
-        sessionStorage.setItem("krishi-order", JSON.stringify({ id: ref.id, ...order, createdAt: Date.now() }));
+        sessionStorage.setItem("krishi-order-id", ref.id);
       }
       cart.clear();
       nav({ to: "/track" });
