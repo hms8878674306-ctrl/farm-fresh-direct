@@ -2,6 +2,9 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import appCss from "../styles.css?url";
 import { Header } from "@/components/Header";
 import { SploshSlogan } from "@/components/SploshSlogan";
+import { AuthProvider } from "@/lib/auth-context";
+import { useEffect } from "react";
+import { seedIfEmpty } from "@/lib/seed";
 
 function NotFoundComponent() {
   return (
@@ -44,8 +47,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  useEffect(() => { seedIfEmpty(); }, []);
   return (
-    <>
+    <AuthProvider>
       <SploshSlogan />
       <Header />
       <Outlet />
@@ -53,6 +57,6 @@ function RootComponent() {
         <div className="display text-lg font-bold text-foreground">Krishi<span className="text-primary">Direct</span></div>
         <p className="mt-1">Freshness Direct From Farm. Built with ❤️ for farmers.</p>
       </footer>
-    </>
+    </AuthProvider>
   );
 }
