@@ -2,6 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCart, cartTotal, cart } from "@/lib/cart-store";
 import { useState } from "react";
 import { Banknote, CreditCard, Wallet, MapPin, Check } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout — KrishiDirect" }] }),
@@ -12,19 +15,38 @@ function Checkout() {
   const s = useCart();
   const total = cartTotal(s);
   const nav = useNavigate();
+  const { user } = useAuth();
   const [method, setMethod] = useState<"cod" | "upi" | "card">("cod");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [addr, setAddr] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const placeOrder = (e: React.FormEvent) => {
+  const placeOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone || !addr) return;
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("krishi-order", JSON.stringify({ items: s.items, total, method, name, phone, addr, placedAt: Date.now() }));
+    setBusy(true);
+    const order = {
+      items: s.items.map(({ product, qty }) => ({
+        productId: product.id, name: product.name, price: product.price, qty, unit: product.unit,
+      })),
+      total, method, name, phone, addr,
+      userId: user?.uid || null,
+      userEmail: user?.email || null,
+      status: "placed",
+      createdAt: serverTimestamp(),
+    };
+    try {
+      const ref = await addDoc(collection(db, "orders"), order);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("krishi-order", JSON.stringify({ id: ref.id, ...order, createdAt: Date.now() }));
+      }
+      cart.clear();
+      nav({ to: "/track" });
+    } catch (err: any) {
+      alert("Could not place order: " + (err?.message || err));
+      setBusy(false);
     }
-    cart.clear();
-    nav({ to: "/track" });
   };
 
   if (s.items.length === 0 && typeof window !== "undefined") {
@@ -91,8 +113,8 @@ function Checkout() {
             <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span className="text-fresh font-semibold">FREE</span></div>
             <div className="flex justify-between font-bold text-lg pt-2 border-t border-border"><span>Total</span><span className="text-primary">₹{total}</span></div>
           </div>
-          <button type="submit" className="mt-5 w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold shadow-glow hover:bg-primary-glow transition">
-            Place Order {method === "cod" && "(COD)"}
+          <button type="submit" disabled={busy} className="mt-5 w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold shadow-glow hover:bg-primary-glow transition disabled:opacity-60">
+            {busy ? "Placing…" : <>Place Order {method === "cod" && "(COD)"}</>}
           </button>
           <p className="text-[11px] text-muted-foreground text-center mt-3">By placing the order you agree to fair-farmer terms.</p>
         </aside>
