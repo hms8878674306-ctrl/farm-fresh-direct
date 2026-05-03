@@ -12,7 +12,7 @@ export const Route = createFileRoute("/shop")({
 
 function Shop() {
   const { q } = Route.useSearch();
-  const [query, setQuery] = useState(q);
+  const [query, setQuery] = useState(q || "");
   const [cat, setCat] = useState<string>("all");
 
   const filtered = products.filter(p =>
