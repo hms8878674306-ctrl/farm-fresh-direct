@@ -34,7 +34,7 @@ export function Header() {
 
           <nav className="hidden md:flex items-center gap-7">
             <Link to="/" className={linkCls("/")}>Home</Link>
-            <Link to="/shop" className={linkCls("/shop")}>Shop</Link>
+            <Link to="/shop" search={{ q: "" }} className={linkCls("/shop")}>Shop</Link>
             <Link to="/farmers" className={linkCls("/farmers")}>Farmers</Link>
             <Link to="/track" className={linkCls("/track")}>Track</Link>
             <Link to="/dashboard" className={linkCls("/dashboard")}>Dashboard</Link>
@@ -42,7 +42,7 @@ export function Header() {
 
           <div className="flex items-center gap-2">
             <VoiceSearch />
-            <Link to="/chat" className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted transition" aria-label="Chat">
+            <Link to="/chat" search={{ farmerId: "f1" }} className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted transition" aria-label="Chat">
               <MessageCircle className="h-5 w-5" />
             </Link>
             <Link to="/dashboard" className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-muted">

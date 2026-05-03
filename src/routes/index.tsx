@@ -54,7 +54,7 @@ function Index() {
                 Real food. Real farmers. Zero middlemen. Order today, get it tomorrow — pay cash on delivery.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/shop" className="inline-flex items-center gap-2 rounded-full bg-harvest text-harvest-foreground px-6 py-3 font-bold shadow-glow hover:scale-105 transition">
+                <Link to="/shop" search={{ q: "" }} className="inline-flex items-center gap-2 rounded-full bg-harvest text-harvest-foreground px-6 py-3 font-bold shadow-glow hover:scale-105 transition">
                   Shop Fresh <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link to="/farmers" className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur text-white px-6 py-3 font-semibold hover:bg-white/25 transition">
@@ -91,7 +91,7 @@ function Index() {
             <h2 className="display text-4xl font-extrabold mt-1">In Season Near You</h2>
             <p className="text-muted-foreground mt-1 text-sm">Based on the season, your area, and freshness today.</p>
           </div>
-          <Link to="/shop" className="hidden sm:inline-flex text-sm font-semibold text-primary hover:underline">View all →</Link>
+          <Link to="/shop" search={{ q: "" }} className="hidden sm:inline-flex text-sm font-semibold text-primary hover:underline">View all →</Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.slice(0, 4).map(p => <ProductCard key={p.id} product={p} />)}
