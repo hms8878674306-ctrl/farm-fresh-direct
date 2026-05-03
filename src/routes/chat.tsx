@@ -7,6 +7,8 @@ import {
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { Handshake, Check, X, Sparkles } from "lucide-react";
+import { deals } from "@/lib/deals-store";
+import { cart } from "@/lib/cart-store";
 
 export const Route = createFileRoute("/chat")({
   validateSearch: (s: Record<string, unknown>): { farmerId?: string } => ({ farmerId: (s.farmerId as string) || "f1" }),
