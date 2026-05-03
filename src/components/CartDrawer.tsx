@@ -1,11 +1,17 @@
-import { X, Minus, Plus, Trash2 } from "lucide-react";
-import { useCart, cart, cartTotal } from "@/lib/cart-store";
+import { X, Minus, Plus, Trash2, Sparkles } from "lucide-react";
+import { useCart, cart, cartTotal, effectivePrice, cartAvgDistance } from "@/lib/cart-store";
+import { useDeals } from "@/lib/deals-store";
+import { deliveryFee, FREE_DELIVERY_THRESHOLD } from "@/lib/delivery";
 import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const s = useCart();
+  useDeals(); // re-render when deals change
   const total = cartTotal(s);
+  const avgKm = cartAvgDistance(s);
+  const fee = deliveryFee(total, avgKm);
+  const grand = total + fee;
   useEffect(() => { document.body.style.overflow = open ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [open]);
 
   return (
@@ -24,24 +30,33 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
               <p>Your basket is empty.</p>
             </div>
           )}
-          {s.items.map(({ product, qty }) => (
+          {s.items.map(({ product, qty }) => {
+            const unit = effectivePrice(product);
+            const negotiated = unit !== product.price;
+            return (
             <div key={product.id} className="flex gap-3 rounded-xl bg-card border border-border p-3 animate-leaf-grow">
               <img src={product.image} alt={product.name} className="h-20 w-20 rounded-lg object-cover" />
               <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate">{product.name}</div>
-                <div className="text-xs text-muted-foreground">₹{product.price}/{product.unit}</div>
+                <div className="font-semibold truncate flex items-center gap-1.5">
+                  {product.name}
+                  {negotiated && <span title="Negotiated price" className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase text-fresh"><Sparkles className="h-3 w-3" /> Deal</span>}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {negotiated ? <><span className="line-through mr-1">₹{product.price}</span><span className="text-fresh font-semibold">₹{unit}</span></> : <>₹{unit}</>}/{product.unit}
+                </div>
                 <div className="mt-2 flex items-center justify-between">
                   <div className="inline-flex items-center gap-1 rounded-full border border-border p-1">
                     <button onClick={() => cart.setQty(product.id, qty - 1)} className="h-6 w-6 rounded-full hover:bg-muted inline-flex items-center justify-center"><Minus className="h-3 w-3" /></button>
                     <span className="w-6 text-center text-xs font-bold">{qty}</span>
                     <button onClick={() => cart.setQty(product.id, qty + 1)} className="h-6 w-6 rounded-full hover:bg-muted inline-flex items-center justify-center"><Plus className="h-3 w-3" /></button>
                   </div>
-                  <div className="font-bold text-primary">₹{product.price * qty}</div>
+                  <div className="font-bold text-primary">₹{unit * qty}</div>
                 </div>
               </div>
               <button onClick={() => cart.remove(product.id)} className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive inline-flex items-center justify-center self-start"><Trash2 className="h-4 w-4" /></button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="border-t border-border p-5 space-y-3">
