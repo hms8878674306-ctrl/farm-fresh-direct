@@ -92,13 +92,13 @@ function Track() {
         <div className="text-6xl mb-4">📦</div>
         <h1 className="display text-2xl font-bold">No active order</h1>
         <p className="text-muted-foreground mt-2">Place an order to see live tracking here.</p>
-        <Link to="/shop" className="inline-block mt-6 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">Shop now</Link>
+        <Link to="/shop" search={{ q: "" }} className="inline-block mt-6 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">Shop now</Link>
       </main>
     );
   }
 
   const rider = order.rider || { name: "Suresh Kumar", rating: 4.9, phone: "+91 98765 43210" };
-  const delivered = stage >= 3;
+  const delivered = stage >= STAGES.length - 1;
 
   return (
     <main className="mx-auto max-w-3xl px-4 md:px-8 py-10">
