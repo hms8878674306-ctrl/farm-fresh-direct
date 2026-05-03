@@ -121,8 +121,16 @@ function Chat() {
       }
       // detect existing deal in history
       const lastDeal = [...list].reverse().find(m => m.kind === "deal");
-      if (lastDeal && lastDeal.price && lastDeal.qty) setDeal({ price: lastDeal.price, qty: lastDeal.qty });
-      else setDeal(null);
+      if (lastDeal && lastDeal.price && lastDeal.qty) {
+        setDeal({ price: lastDeal.price, qty: lastDeal.qty });
+        // Persist negotiated price + ensure item is in cart at deal qty
+        deals.set({ productId: product.id, price: lastDeal.price, qty: lastDeal.qty, at: Date.now() });
+        const inCart = cart.get().items.find(i => i.product.id === product.id);
+        if (!inCart) cart.add(product, lastDeal.qty);
+        else if (inCart.qty < lastDeal.qty) cart.setQty(product.id, lastDeal.qty);
+      } else {
+        setDeal(null);
+      }
       setMsgs(list);
     }, (err) => console.warn("[chat] snapshot:", err.message));
 
