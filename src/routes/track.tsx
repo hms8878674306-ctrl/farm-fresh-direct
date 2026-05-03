@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Phone, MessageCircle, MapPin, Package, Check, Truck, Sprout, Home } from "lucide-react";
+import { Phone, MessageCircle, MapPin, Package, Check, Truck, Sprout, Home, PackageCheck } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, updateDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
 
@@ -10,10 +10,11 @@ export const Route = createFileRoute("/track")({
 });
 
 const STAGES = [
-  { key: "confirmed", label: "Order Confirmed", desc: "Farmer notified", Icon: Check },
-  { key: "harvested", label: "Freshly Harvested", desc: "Picked from farm", Icon: Sprout },
-  { key: "shipped",   label: "Out for Delivery", desc: "Rider on the way", Icon: Truck },
-  { key: "delivered", label: "Delivered",         desc: "Enjoy fresh!",     Icon: Home },
+  { key: "confirmed", label: "Order Confirmed", desc: "Farmer notified instantly",   Icon: Check },
+  { key: "harvested", label: "Freshly Harvested", desc: "Picked from the farm",       Icon: Sprout },
+  { key: "packed",    label: "Packed & Ready",    desc: "Quality-checked, sealed",    Icon: PackageCheck },
+  { key: "shipped",   label: "Out for Delivery",  desc: "Rider on the way",           Icon: Truck },
+  { key: "delivered", label: "Delivered",          desc: "Enjoy fresh produce!",       Icon: Home },
 ];
 
 type Order = {
@@ -60,7 +61,7 @@ function Track() {
 
   // Live ETA countdown
   useEffect(() => {
-    if (!order || order.stage >= 3) return;
+    if (!order || order.stage >= STAGES.length - 1) return;
     const i = setInterval(() => setEta(e => Math.max(0, e - 1)), 1000);
     return () => clearInterval(i);
   }, [order?.stage]);
@@ -70,12 +71,12 @@ function Track() {
 
   const advance = async () => {
     if (!order) return;
-    const next = Math.min(3, (order.stage ?? 0) + 1);
+    const next = Math.min(STAGES.length - 1, (order.stage ?? 0) + 1);
     const label = STAGES[next].label;
     await updateDoc(doc(db, "orders", order.id), {
       stage: next,
       status: STAGES[next].key,
-      etaMinutes: next === 3 ? 0 : Math.max(2, (order.etaMinutes || 10) - 8),
+      etaMinutes: next === STAGES.length - 1 ? 0 : Math.max(2, (order.etaMinutes || 10) - 6),
       statusHistory: arrayUnion({ stage: next, label, at: Date.now() }),
       updatedAt: serverTimestamp(),
     });
