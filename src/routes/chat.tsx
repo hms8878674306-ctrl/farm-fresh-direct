@@ -67,7 +67,7 @@ function farmerDecide(basePrice: number, offerPrice: number, qty: number) {
 function Chat() {
   const { farmerId } = Route.useSearch();
   const { user } = useAuth();
-  const farmer = farmerById(farmerId) || farmers[0];
+  const farmer = farmerById(farmerId || "f1") || farmers[0];
 
   // Pick a representative product from this farmer for the negotiation
   const product = useMemo(
