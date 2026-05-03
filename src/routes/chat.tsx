@@ -7,9 +7,11 @@ import {
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { Handshake, Check, X, Sparkles } from "lucide-react";
+import { deals } from "@/lib/deals-store";
+import { cart } from "@/lib/cart-store";
 
 export const Route = createFileRoute("/chat")({
-  validateSearch: (s: Record<string, unknown>) => ({ farmerId: (s.farmerId as string) || "f1" }),
+  validateSearch: (s: Record<string, unknown>): { farmerId?: string } => ({ farmerId: (s.farmerId as string) || "f1" }),
   head: () => ({ meta: [{ title: "Negotiate with Farmer — KrishiDirect" }] }),
   component: Chat,
 });
@@ -67,7 +69,7 @@ function farmerDecide(basePrice: number, offerPrice: number, qty: number) {
 function Chat() {
   const { farmerId } = Route.useSearch();
   const { user } = useAuth();
-  const farmer = farmerById(farmerId) || farmers[0];
+  const farmer = farmerById(farmerId || "f1") || farmers[0];
 
   // Pick a representative product from this farmer for the negotiation
   const product = useMemo(
@@ -119,8 +121,16 @@ function Chat() {
       }
       // detect existing deal in history
       const lastDeal = [...list].reverse().find(m => m.kind === "deal");
-      if (lastDeal && lastDeal.price && lastDeal.qty) setDeal({ price: lastDeal.price, qty: lastDeal.qty });
-      else setDeal(null);
+      if (lastDeal && lastDeal.price && lastDeal.qty) {
+        setDeal({ price: lastDeal.price, qty: lastDeal.qty });
+        // Persist negotiated price + ensure item is in cart at deal qty
+        deals.set({ productId: product.id, price: lastDeal.price, qty: lastDeal.qty, at: Date.now() });
+        const inCart = cart.get().items.find(i => i.product.id === product.id);
+        if (!inCart) cart.add(product, lastDeal.qty);
+        else if (inCart.qty < lastDeal.qty) cart.setQty(product.id, lastDeal.qty);
+      } else {
+        setDeal(null);
+      }
       setMsgs(list);
     }, (err) => console.warn("[chat] snapshot:", err.message));
 

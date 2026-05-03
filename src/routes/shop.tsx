@@ -5,14 +5,14 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 
 export const Route = createFileRoute("/shop")({
-  validateSearch: (s: Record<string, unknown>) => ({ q: (s.q as string) || "" }),
+  validateSearch: (s: Record<string, unknown>): { q?: string } => ({ q: (s.q as string) || "" }),
   head: () => ({ meta: [{ title: "Shop Fresh — KrishiDirect" }, { name: "description", content: "Browse fresh vegetables and fruits from local farmers." }] }),
   component: Shop,
 });
 
 function Shop() {
   const { q } = Route.useSearch();
-  const [query, setQuery] = useState(q);
+  const [query, setQuery] = useState(q || "");
   const [cat, setCat] = useState<string>("all");
 
   const filtered = products.filter(p =>

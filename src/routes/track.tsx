@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Phone, MessageCircle, MapPin, Package, Check, Truck, Sprout, Home } from "lucide-react";
+import { Phone, MessageCircle, MapPin, Package, Check, Truck, Sprout, Home, PackageCheck } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, updateDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
 
@@ -10,10 +10,11 @@ export const Route = createFileRoute("/track")({
 });
 
 const STAGES = [
-  { key: "confirmed", label: "Order Confirmed", desc: "Farmer notified", Icon: Check },
-  { key: "harvested", label: "Freshly Harvested", desc: "Picked from farm", Icon: Sprout },
-  { key: "shipped",   label: "Out for Delivery", desc: "Rider on the way", Icon: Truck },
-  { key: "delivered", label: "Delivered",         desc: "Enjoy fresh!",     Icon: Home },
+  { key: "confirmed", label: "Order Confirmed", desc: "Farmer notified instantly",   Icon: Check },
+  { key: "harvested", label: "Freshly Harvested", desc: "Picked from the farm",       Icon: Sprout },
+  { key: "packed",    label: "Packed & Ready",    desc: "Quality-checked, sealed",    Icon: PackageCheck },
+  { key: "shipped",   label: "Out for Delivery",  desc: "Rider on the way",           Icon: Truck },
+  { key: "delivered", label: "Delivered",          desc: "Enjoy fresh produce!",       Icon: Home },
 ];
 
 type Order = {
@@ -60,7 +61,7 @@ function Track() {
 
   // Live ETA countdown
   useEffect(() => {
-    if (!order || order.stage >= 3) return;
+    if (!order || order.stage >= STAGES.length - 1) return;
     const i = setInterval(() => setEta(e => Math.max(0, e - 1)), 1000);
     return () => clearInterval(i);
   }, [order?.stage]);
@@ -70,12 +71,12 @@ function Track() {
 
   const advance = async () => {
     if (!order) return;
-    const next = Math.min(3, (order.stage ?? 0) + 1);
+    const next = Math.min(STAGES.length - 1, (order.stage ?? 0) + 1);
     const label = STAGES[next].label;
     await updateDoc(doc(db, "orders", order.id), {
       stage: next,
       status: STAGES[next].key,
-      etaMinutes: next === 3 ? 0 : Math.max(2, (order.etaMinutes || 10) - 8),
+      etaMinutes: next === STAGES.length - 1 ? 0 : Math.max(2, (order.etaMinutes || 10) - 6),
       statusHistory: arrayUnion({ stage: next, label, at: Date.now() }),
       updatedAt: serverTimestamp(),
     });
@@ -91,13 +92,13 @@ function Track() {
         <div className="text-6xl mb-4">📦</div>
         <h1 className="display text-2xl font-bold">No active order</h1>
         <p className="text-muted-foreground mt-2">Place an order to see live tracking here.</p>
-        <Link to="/shop" className="inline-block mt-6 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">Shop now</Link>
+        <Link to="/shop" search={{ q: "" }} className="inline-block mt-6 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">Shop now</Link>
       </main>
     );
   }
 
   const rider = order.rider || { name: "Suresh Kumar", rating: 4.9, phone: "+91 98765 43210" };
-  const delivered = stage >= 3;
+  const delivered = stage >= STAGES.length - 1;
 
   return (
     <main className="mx-auto max-w-3xl px-4 md:px-8 py-10">
@@ -143,7 +144,7 @@ function Track() {
             <div className="text-xs text-muted-foreground">Your delivery partner · ⭐ {rider.rating}</div>
           </div>
           <a href={`tel:${rider.phone}`} aria-label="Call rider" className="h-11 w-11 rounded-full bg-fresh text-fresh-foreground inline-flex items-center justify-center hover:opacity-90"><Phone className="h-5 w-5" /></a>
-          <Link to="/chat" aria-label="Chat" className="h-11 w-11 rounded-full bg-secondary inline-flex items-center justify-center hover:bg-muted"><MessageCircle className="h-5 w-5" /></Link>
+          <Link to="/chat" search={{ farmerId: "f1" }} aria-label="Chat" className="h-11 w-11 rounded-full bg-secondary inline-flex items-center justify-center hover:bg-muted"><MessageCircle className="h-5 w-5" /></Link>
         </div>
       </section>
 
