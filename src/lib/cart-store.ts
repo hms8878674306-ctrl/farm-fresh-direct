@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Product } from "./data";
+import { deals } from "./deals-store";
 
 type CartItem = { product: Product; qty: number };
 type State = { items: CartItem[] };
@@ -31,5 +32,21 @@ export const cart = {
 
 const serverSnap: State = { items: [] };
 export const useCart = () => useSyncExternalStore(cart.subscribe, cart.get, () => serverSnap);
-export const cartTotal = (s: State) => s.items.reduce((sum, i) => sum + i.product.price * i.qty, 0);
-export const cartCount = (s: State) => s.items.reduce((sum, i) => sum + i.qty, 0);
+
+// Effective unit price respects negotiated deals.
+export function effectivePrice(p: Product): number {
+  const d = deals.get(p.id);
+  return d ? d.price : p.price;
+}
+
+export const cartTotal = (s: State) =>
+  s.items.reduce((sum, i) => sum + effectivePrice(i.product) * i.qty, 0);
+export const cartCount = (s: State) =>
+  s.items.reduce((sum, i) => sum + i.qty, 0);
+
+// Average distance of items in cart (km)
+export const cartAvgDistance = (s: State) => {
+  if (s.items.length === 0) return 0;
+  const total = s.items.reduce((sum, i) => sum + (i.product.distanceKm || 0), 0);
+  return total / s.items.length;
+};
