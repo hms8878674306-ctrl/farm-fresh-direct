@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Handshake, Check, X, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/chat")({
-  validateSearch: (s: Record<string, unknown>) => ({ farmerId: (s.farmerId as string) || "f1" }),
+  validateSearch: (s: Record<string, unknown>): { farmerId?: string } => ({ farmerId: (s.farmerId as string) || "f1" }),
   head: () => ({ meta: [{ title: "Negotiate with Farmer — KrishiDirect" }] }),
   component: Chat,
 });
