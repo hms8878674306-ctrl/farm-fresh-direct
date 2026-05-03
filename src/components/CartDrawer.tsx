@@ -60,9 +60,17 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
 
         <div className="border-t border-border p-5 space-y-3">
+          {total > 0 && total < FREE_DELIVERY_THRESHOLD && (
+            <div className="rounded-lg bg-harvest/10 border border-harvest/30 px-3 py-2 text-[11px]">
+              Add <b>₹{FREE_DELIVERY_THRESHOLD - total}</b> more for <b>FREE delivery</b> 🚚
+            </div>
+          )}
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>₹{total}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Delivery</span><span className="text-fresh font-semibold">FREE</span></div>
-          <div className="flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">₹{total}</span></div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Delivery {avgKm > 0 && <span className="text-[10px]">(~{avgKm.toFixed(1)} km)</span>}</span>
+            {fee === 0 ? <span className="text-fresh font-semibold">FREE</span> : <span>₹{fee}</span>}
+          </div>
+          <div className="flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">₹{grand}</span></div>
           <Link
             to="/checkout"
             onClick={onClose}
