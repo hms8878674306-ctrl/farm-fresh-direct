@@ -6,12 +6,16 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
-import { Handshake, Check, X, Sparkles } from "lucide-react";
+import { Handshake, Check, X, Sparkles, Send } from "lucide-react";
 import { deals } from "@/lib/deals-store";
 import { cart } from "@/lib/cart-store";
 
 export const Route = createFileRoute("/chat")({
-  validateSearch: (s: Record<string, unknown>): { farmerId?: string } => ({ farmerId: (s.farmerId as string) || "f1" }),
+  validateSearch: (s: Record<string, unknown>): { farmerId?: string; productId?: string; qty?: number } => ({
+    farmerId: (s.farmerId as string) || "f1",
+    productId: (s.productId as string) || undefined,
+    qty: Number(s.qty) || undefined,
+  }),
   head: () => ({ meta: [{ title: "Negotiate with Farmer — KrishiDirect" }] }),
   component: Chat,
 });
@@ -67,19 +71,38 @@ function farmerDecide(basePrice: number, offerPrice: number, qty: number) {
 }
 
 function Chat() {
-  const { farmerId } = Route.useSearch();
-  const { user } = useAuth();
+  const { farmerId, productId, qty } = Route.useSearch();
+  const { user, role } = useAuth();
   const farmer = farmerById(farmerId || "f1") || farmers[0];
 
-  // Pick a representative product from this farmer for the negotiation
   const product = useMemo(
-    () => products.find(p => p.farmerId === farmer.id) || products[0],
-    [farmer.id]
+    () => products.find(p => p.id === productId) || products.find(p => p.farmerId === farmer.id) || products[0],
+    [farmer.id, productId]
   );
 
+  if (role === "farmer") {
+    return <FarmerChat farmerId={farmer.id} farmer={farmer} fallbackProduct={product} />;
+  }
+
+  return <ConsumerChat farmerId={farmer.id} user={user} farmer={farmer} product={product} initialQty={qty || 5} />;
+}
+
+function ConsumerChat({
+  farmerId,
+  user,
+  farmer,
+  product,
+  initialQty,
+}: {
+  farmerId: string;
+  user: ReturnType<typeof useAuth>["user"];
+  farmer: ReturnType<typeof farmerById>;
+  product: typeof products[number];
+  initialQty: number;
+}) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [offerPrice, setOfferPrice] = useState<number>(Math.round(product.price * 0.9));
-  const [offerQty, setOfferQty] = useState<number>(5);
+  const [offerQty, setOfferQty] = useState<number>(initialQty);
   const [deal, setDeal] = useState<{ price: number; qty: number } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -89,7 +112,7 @@ function Chat() {
         sessionStorage.setItem("krishi-anon", k); return k;
       })())
     : "anon");
-  const convoId = `${farmerId}__${userKey}`;
+  const convoId = `${farmerId}__${product.id}__${userKey}`;
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
@@ -316,6 +339,301 @@ function Chat() {
             </>
           )}
         </div>
+      </div>
+    </main>
+  );
+}
+
+type ChatSummary = {
+  id: string;
+  farmerId?: string;
+  userId?: string;
+  productId?: string;
+};
+
+function FarmerChat({
+  farmerId,
+  farmer,
+  fallbackProduct,
+}: {
+  farmerId: string;
+  farmer: ReturnType<typeof farmerById>;
+  fallbackProduct: typeof products[number];
+}) {
+  const [convos, setConvos] = useState<ChatSummary[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [reply, setReply] = useState("");
+  const [counterPrice, setCounterPrice] = useState(fallbackProduct.price);
+  const [counterQty, setCounterQty] = useState(5);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  const selectedConvo = convos.find(c => c.id === selectedId) || null;
+  const product = products.find(p => p.id === selectedConvo?.productId) || fallbackProduct;
+  const latestBuyerOffer = useMemo(() => {
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i];
+      if (m.kind === "deal") break;
+      if (m.from === "me" && (m.kind === "offer" || m.kind === "counter") && m.price && m.qty) return m;
+    }
+    return null;
+  }, [msgs]);
+  const closedDeal = useMemo(() => [...msgs].reverse().find(m => m.kind === "deal"), [msgs]);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
+
+  useEffect(() => {
+    const q = query(collection(db, "chats"), orderBy("updatedAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const list = snap.docs
+        .map(d => ({ id: d.id, ...(d.data() as Omit<ChatSummary, "id">) }))
+        .filter(c => !c.farmerId || c.farmerId === farmerId);
+
+      setConvos(list);
+      setSelectedId(current => current || list[0]?.id || "");
+    }, (err) => console.warn("[farmer-chat] inbox:", err.message));
+
+    return () => unsub();
+  }, [farmerId]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setMsgs([]);
+      return;
+    }
+
+    const q = query(collection(db, "chats", selectedId, "messages"), orderBy("createdAt", "asc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const list: Msg[] = snap.docs.map(d => {
+        const v = d.data() as any;
+        const t: Date = v.createdAt?.toDate?.() || new Date();
+
+        return {
+          id: d.id,
+          from: v.from === "farmer" ? "farmer" : "me",
+          kind: (v.kind || "text") as MsgKind,
+          text: v.text || "",
+          price: v.price,
+          qty: v.qty,
+          unit: v.unit,
+          productName: v.productName,
+          time: fmtTime(t),
+        };
+      });
+
+      setMsgs(list);
+    }, (err) => console.warn("[farmer-chat] messages:", err.message));
+
+    return () => unsub();
+  }, [selectedId]);
+
+  useEffect(() => {
+    setCounterPrice(latestBuyerOffer?.price || product.price);
+    setCounterQty(latestBuyerOffer?.qty || 5);
+  }, [latestBuyerOffer?.price, latestBuyerOffer?.qty, product.price]);
+
+  const writeFarmerMsg = async (m: Partial<Msg> & { kind: MsgKind; text: string }) => {
+    if (!selectedId || closedDeal) return;
+
+    await addDoc(collection(db, "chats", selectedId, "messages"), {
+      ...m,
+      from: "farmer",
+      createdAt: serverTimestamp(),
+    });
+    await setDoc(doc(db, "chats", selectedId), { updatedAt: serverTimestamp() }, { merge: true });
+  };
+
+  const sendReply = async () => {
+    const text = reply.trim();
+    if (!text) return;
+
+    setReply("");
+    await writeFarmerMsg({ kind: "text", text });
+  };
+
+  const sendCounter = async () => {
+    await writeFarmerMsg({
+      kind: "counter",
+      price: Math.max(1, Math.round(counterPrice)),
+      qty: Math.max(1, Math.round(counterQty)),
+      unit: product.unit,
+      productName: product.name,
+      text: `Farmer counter: ₹${Math.round(counterPrice)}/${product.unit} × ${Math.round(counterQty)} ${product.unit}`,
+    });
+  };
+
+  const acceptBuyerOffer = async () => {
+    if (!latestBuyerOffer?.price || !latestBuyerOffer.qty) return;
+
+    await writeFarmerMsg({
+      kind: "accept",
+      price: latestBuyerOffer.price,
+      qty: latestBuyerOffer.qty,
+      unit: product.unit,
+      productName: product.name,
+      text: `Accepted ₹${latestBuyerOffer.price}/${product.unit} × ${latestBuyerOffer.qty}`,
+    });
+    await writeFarmerMsg({
+      kind: "deal",
+      price: latestBuyerOffer.price,
+      qty: latestBuyerOffer.qty,
+      unit: product.unit,
+      productName: product.name,
+      text: `🤝 DEAL: ${product.name} — ₹${latestBuyerOffer.price}/${product.unit} × ${latestBuyerOffer.qty}`,
+    });
+  };
+
+  const rejectBuyerOffer = async () => {
+    await writeFarmerMsg({
+      kind: "reject",
+      text: "Sorry, I cannot accept this price. Please send a better offer.",
+    });
+  };
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 md:px-8">
+      <div className="mb-6">
+        <h1 className="display text-4xl font-extrabold">Farmer Negotiation Inbox</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Review buyer offers for {farmer.name}, send counters, and close deals from the farmer side.
+        </p>
+      </div>
+
+      <div className="grid min-h-[calc(100vh-230px)] gap-4 lg:grid-cols-[320px_1fr]">
+        <aside className="rounded-3xl border border-border bg-card p-3 shadow-card">
+          <div className="px-2 pb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">Buyer chats</div>
+          {convos.length === 0 ? (
+            <div className="rounded-2xl bg-secondary/50 p-4 text-sm text-muted-foreground">
+              No buyer negotiations yet. When consumers start a chat, it will appear here.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {convos.map((c, index) => {
+                const item = products.find(p => p.id === c.productId) || fallbackProduct;
+                const active = c.id === selectedId;
+
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedId(c.id)}
+                    className={`w-full rounded-2xl border p-3 text-left transition ${active ? "border-primary bg-primary/10" : "border-border hover:bg-secondary/50"}`}
+                  >
+                    <div className="text-sm font-bold">Buyer #{index + 1}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{item.name}</div>
+                    <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">Conversation active</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </aside>
+
+        <section className="flex min-h-[620px] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-card">
+          <div className="flex items-center gap-3 border-b border-border bg-secondary/40 p-4">
+            <img src={farmer.photo} alt={farmer.name} className="h-12 w-12 rounded-full object-cover" />
+            <div className="min-w-0 flex-1">
+              <div className="font-bold">{selectedConvo ? `Negotiating ${product.name}` : "Select a buyer chat"}</div>
+              <div className="truncate text-xs text-muted-foreground">Listed ₹{product.price}/{product.unit}</div>
+            </div>
+            {closedDeal && (
+              <span className="rounded-full bg-fresh px-3 py-1 text-xs font-bold text-fresh-foreground">Deal closed</span>
+            )}
+          </div>
+
+          <div className="flex-1 space-y-3 overflow-y-auto bg-background p-4">
+            {msgs.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
+                Select a buyer conversation to start replying.
+              </div>
+            ) : msgs.map((m) => {
+              const mine = m.from === "farmer";
+
+              if (m.kind === "deal") {
+                return (
+                  <div key={m.id} className="flex justify-center">
+                    <div className="w-full max-w-md rounded-2xl p-4 gradient-fresh text-primary-foreground shadow-glow">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-90"><Handshake className="h-4 w-4" /> Deal sealed</div>
+                      <div className="display mt-1 text-2xl font-extrabold">{m.productName}</div>
+                      <div className="mt-1 text-sm opacity-95">₹{m.price}/{m.unit} × {m.qty} = <span className="font-bold">₹{(m.price! * m.qty!)}</span></div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 ${mine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-secondary rounded-bl-sm"}`}>
+                    {(m.kind === "offer" || m.kind === "counter") && m.price ? (
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider opacity-75">{mine ? "Your counter" : "Buyer offer"}</div>
+                        <div className="mt-0.5 text-base font-extrabold">₹{m.price}/{m.unit} × {m.qty}</div>
+                        <p className="mt-1 text-xs opacity-90">{m.text}</p>
+                      </div>
+                    ) : m.kind === "accept" ? (
+                      <p className="flex items-center gap-1.5 text-sm"><Check className="h-4 w-4" /> {m.text}</p>
+                    ) : m.kind === "reject" ? (
+                      <p className="flex items-center gap-1.5 text-sm"><X className="h-4 w-4" /> {m.text}</p>
+                    ) : (
+                      <p className="text-sm">{m.text}</p>
+                    )}
+                    <div className={`mt-1 text-[10px] ${mine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{m.time}</div>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={endRef} />
+          </div>
+
+          <div className="space-y-3 border-t border-border bg-card p-3">
+            {!selectedConvo ? (
+              <div className="rounded-xl bg-secondary/50 p-3 text-sm text-muted-foreground">Choose a buyer chat from the inbox.</div>
+            ) : closedDeal ? (
+              <div className="rounded-xl border border-fresh/30 bg-fresh/10 p-3 text-sm">
+                Negotiation is closed for this buyer.
+              </div>
+            ) : (
+              <>
+                <div className="rounded-xl border border-border bg-secondary/40 p-3">
+                  <div className="mb-2 text-[11px] font-semibold text-muted-foreground">Respond to latest buyer offer</div>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <label className="min-w-28 flex-1">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Price /{product.unit}</div>
+                      <input type="number" min={1} value={counterPrice} onChange={e => setCounterPrice(+e.target.value)}
+                        className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm font-bold focus:border-primary focus:outline-none" />
+                    </label>
+                    <label className="min-w-24 flex-1">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Quantity</div>
+                      <input type="number" min={1} value={counterQty} onChange={e => setCounterQty(+e.target.value)}
+                        className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm font-bold focus:border-primary focus:outline-none" />
+                    </label>
+                    <button onClick={sendCounter} className="h-9 rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary-glow">
+                      Send counter
+                    </button>
+                    <button onClick={acceptBuyerOffer} disabled={!latestBuyerOffer} className="h-9 rounded-full bg-fresh px-4 text-xs font-bold text-fresh-foreground disabled:opacity-50">
+                      Accept buyer
+                    </button>
+                    <button onClick={rejectBuyerOffer} className="h-9 rounded-full border border-border px-4 text-xs font-bold hover:bg-muted">
+                      Reject
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    value={reply}
+                    onChange={e => setReply(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") sendReply(); }}
+                    placeholder="Reply as farmer..."
+                    className="h-11 flex-1 rounded-xl border border-border bg-background px-4 text-sm focus:border-primary focus:outline-none"
+                  />
+                  <button onClick={sendReply} className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">
+                    <Send className="h-4 w-4" /> Send
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
       </div>
     </main>
   );

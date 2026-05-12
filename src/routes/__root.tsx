@@ -6,6 +6,8 @@ import { AuthProvider } from "@/lib/auth-context";
 import { AuthGate } from "@/components/AuthGate";
 import { useEffect } from "react";
 import { seedIfEmpty } from "@/lib/seed";
+import { LanguageProvider } from "@/lib/language-context";
+import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 
 function NotFoundComponent() {
   return (
@@ -56,15 +58,18 @@ function RootComponent() {
   useEffect(() => { seedIfEmpty(); }, []);
   return (
     <AuthProvider>
+      <LanguageProvider>
       <AuthGate>
         <SploshSlogan />
         <Header />
+        <WelcomeOverlay />
         <Outlet />
         <footer className="border-t border-border mt-20 py-8 text-center text-sm text-muted-foreground">
           <div className="display text-lg font-bold text-foreground">Krishi<span className="text-primary">Direct</span></div>
           <p className="mt-1">Freshness Direct From Farm. Built with ❤️ for farmers.</p>
         </footer>
       </AuthGate>
+      </LanguageProvider>
     </AuthProvider>
   );
 }
