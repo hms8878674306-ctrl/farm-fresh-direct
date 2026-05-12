@@ -14,6 +14,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FarmersRouteImport } from './routes/farmers'
+import { Route as FarmerDashboardRouteImport } from './routes/farmer-dashboard'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ChatRouteImport } from './routes/chat'
@@ -44,6 +45,11 @@ const FarmersRoute = FarmersRouteImport.update({
   path: '/farmers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FarmerDashboardRoute = FarmerDashboardRouteImport.update({
+  id: '/farmer-dashboard',
+  path: '/farmer-dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/checkout': typeof CheckoutRoute
   '/dashboard': typeof DashboardRoute
+  '/farmer-dashboard': typeof FarmerDashboardRoute
   '/farmers': typeof FarmersRoute
   '/login': typeof LoginRoute
   '/shop': typeof ShopRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/checkout': typeof CheckoutRoute
   '/dashboard': typeof DashboardRoute
+  '/farmer-dashboard': typeof FarmerDashboardRoute
   '/farmers': typeof FarmersRoute
   '/login': typeof LoginRoute
   '/shop': typeof ShopRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/checkout': typeof CheckoutRoute
   '/dashboard': typeof DashboardRoute
+  '/farmer-dashboard': typeof FarmerDashboardRoute
   '/farmers': typeof FarmersRoute
   '/login': typeof LoginRoute
   '/shop': typeof ShopRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/checkout'
     | '/dashboard'
+    | '/farmer-dashboard'
     | '/farmers'
     | '/login'
     | '/shop'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/checkout'
     | '/dashboard'
+    | '/farmer-dashboard'
     | '/farmers'
     | '/login'
     | '/shop'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/checkout'
     | '/dashboard'
+    | '/farmer-dashboard'
     | '/farmers'
     | '/login'
     | '/shop'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   CheckoutRoute: typeof CheckoutRoute
   DashboardRoute: typeof DashboardRoute
+  FarmerDashboardRoute: typeof FarmerDashboardRoute
   FarmersRoute: typeof FarmersRoute
   LoginRoute: typeof LoginRoute
   ShopRoute: typeof ShopRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FarmersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/farmer-dashboard': {
+      id: '/farmer-dashboard'
+      path: '/farmer-dashboard'
+      fullPath: '/farmer-dashboard'
+      preLoaderRoute: typeof FarmerDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRoute,
   CheckoutRoute: CheckoutRoute,
   DashboardRoute: DashboardRoute,
+  FarmerDashboardRoute: FarmerDashboardRoute,
   FarmersRoute: FarmersRoute,
   LoginRoute: LoginRoute,
   ShopRoute: ShopRoute,

@@ -1,8 +1,10 @@
-import { Minus, Plus, MapPin, Star } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Handshake, Minus, Plus, MapPin } from "lucide-react";
 import { useState } from "react";
 import type { Product } from "@/lib/data";
 import { farmerById } from "@/lib/data";
-import { cart } from "@/lib/cart-store";
+import { cart, effectivePrice } from "@/lib/cart-store";
+import { useLanguage } from "@/lib/language-context";
 
 const freshColor: Record<string, string> = {
   "Harvested Today": "bg-fresh text-fresh-foreground",
@@ -14,6 +16,9 @@ export function ProductCard({ product }: { product: Product }) {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const farmer = farmerById(product.farmerId);
+  const { t } = useLanguage();
+  const unitPrice = effectivePrice(product);
+  const totalPrice = unitPrice * qty;
 
   const add = () => {
     cart.add(product, qty);
@@ -49,8 +54,8 @@ export function ProductCard({ product }: { product: Product }) {
 
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-2xl font-extrabold text-primary">₹{product.price}</div>
-            <div className="text-xs text-muted-foreground">per {product.unit}</div>
+            <div className="text-2xl font-extrabold text-primary">₹{totalPrice}</div>
+            <div className="text-xs text-muted-foreground">₹{unitPrice} {t.per} {product.unit} · {t.total}</div>
           </div>
           <div className="flex items-center gap-1 rounded-full border border-border p-1">
             <button onClick={() => setQty(Math.max(1, qty - 1))} className="h-7 w-7 inline-flex items-center justify-center rounded-full hover:bg-muted">
@@ -63,12 +68,22 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-2">
         <button
           onClick={add}
-          className={`w-full h-10 rounded-xl font-semibold text-sm transition-all ${added ? "bg-fresh text-fresh-foreground animate-bounce-in" : "bg-primary text-primary-foreground hover:bg-primary-glow"}`}
+          className={`h-10 rounded-xl font-semibold text-sm transition-all ${added ? "bg-fresh text-fresh-foreground animate-bounce-in" : "bg-primary text-primary-foreground hover:bg-primary-glow"}`}
         >
-          {added ? "✓ Added to cart" : "Add to cart"}
+          {added ? `✓ ${t.addedToCart}` : t.addToCart}
         </button>
+          <Link
+            to="/chat"
+            search={{ farmerId: product.farmerId, productId: product.id, qty }}
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
+          >
+            <Handshake className="h-4 w-4" />
+            Negotiate
+          </Link>
+        </div>
       </div>
     </div>
   );

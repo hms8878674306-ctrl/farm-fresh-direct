@@ -1,10 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ShoppingCart, Leaf, MessageCircle, LayoutDashboard, LogIn, LogOut, User as UserIcon } from "lucide-react";
+import { ClipboardList, Languages, LayoutDashboard, Leaf, LogIn, LogOut, MessageCircle, PackageSearch, ShoppingCart, Store } from "lucide-react";
 import { useCart, cartCount } from "@/lib/cart-store";
 import { useState, useEffect } from "react";
 import { CartDrawer } from "./CartDrawer";
 import { VoiceSearch } from "./VoiceSearch";
 import { useAuth } from "@/lib/auth-context";
+import { useLanguage, type Language } from "@/lib/language-context";
 
 export function Header() {
   const s = useCart();
@@ -12,12 +13,15 @@ export function Header() {
   const [openCart, setOpenCart] = useState(false);
   const [bumped, setBumped] = useState(false);
   const loc = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
+  const isFarmer = role === "farmer";
 
   useEffect(() => { if (count > 0) { setBumped(true); const t = setTimeout(() => setBumped(false), 400); return () => clearTimeout(t); } }, [count]);
 
   const linkCls = (path: string) =>
     `text-sm font-medium transition-colors ${loc.pathname === path ? "text-primary" : "text-muted-foreground hover:text-foreground"}`;
+  const dashboardPath = isFarmer ? "/farmer-dashboard" : "/dashboard";
 
   return (
     <>
@@ -33,45 +37,85 @@ export function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-7">
-            <Link to="/" className={linkCls("/")}>Home</Link>
-            <Link to="/shop" search={{ q: "" }} className={linkCls("/shop")}>Shop</Link>
-            <Link to="/farmers" className={linkCls("/farmers")}>Farmers</Link>
-            <Link to="/track" className={linkCls("/track")}>Track</Link>
-            <Link to="/dashboard" className={linkCls("/dashboard")}>Dashboard</Link>
+            <Link to="/" className={linkCls("/")}>{t.home}</Link>
+            {isFarmer ? (
+              <>
+                <Link to="/farmer-dashboard" className={linkCls("/farmer-dashboard")}>{t.farmerDashboard}</Link>
+                <Link to="/farmer-dashboard" search={{ section: "listings", add: true }} className={linkCls("/farmer-dashboard")}>{t.listings}</Link>
+                <Link to="/track" className={linkCls("/track")}>{t.orders}</Link>
+                <Link to="/chat" search={{ farmerId: "f1" }} className={linkCls("/chat")}>{t.chat}</Link>
+              </>
+            ) : (
+              <>
+                <Link to="/shop" search={{ q: "" }} className={linkCls("/shop")}>{t.shop}</Link>
+                <Link to="/farmers" className={linkCls("/farmers")}>{t.farmers}</Link>
+                <Link to="/track" className={linkCls("/track")}>{t.track}</Link>
+                <Link to="/dashboard" className={linkCls("/dashboard")}>{t.dashboard}</Link>
+              </>
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
-            <VoiceSearch />
-            <Link to="/chat" search={{ farmerId: "f1" }} className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted transition" aria-label="Chat">
+            {!isFarmer && <VoiceSearch />}
+            <div className="hidden lg:inline-flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-xs font-semibold text-muted-foreground">
+              {isFarmer ? <Store className="h-4 w-4 text-primary" /> : <ShoppingCart className="h-4 w-4 text-primary" />}
+              {isFarmer ? t.farmerMode : t.consumerMode}
+            </div>
+            <label className="inline-flex h-10 items-center gap-1 rounded-full border border-border bg-card px-2 text-sm">
+              <Languages className="h-4 w-4 text-muted-foreground" />
+              <span className="sr-only">{t.language}</span>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as Language)}
+                className="bg-transparent text-xs font-semibold outline-none"
+                aria-label={t.language}
+              >
+                <option value="en">EN</option>
+                <option value="hi">HI</option>
+                <option value="mr">MR</option>
+              </select>
+            </label>
+            <Link to="/chat" search={{ farmerId: "f1" }} className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted transition" aria-label={t.chat}>
               <MessageCircle className="h-5 w-5" />
             </Link>
-            <Link to="/dashboard" className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-muted">
-              <LayoutDashboard className="h-5 w-5" />
+            <Link to={dashboardPath} className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-muted">
+              {isFarmer ? <PackageSearch className="h-5 w-5" /> : <LayoutDashboard className="h-5 w-5" />}
             </Link>
             {user ? (
-              <button onClick={() => signOut()} title={user.email || "Sign out"}
-                className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted" aria-label="Sign out">
+              <button onClick={() => signOut()} title={user.email || t.signOut}
+                className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted" aria-label={t.signOut}>
                 <LogOut className="h-5 w-5" />
               </button>
             ) : (
               <Link to="/login" className="hidden sm:inline-flex h-10 px-4 items-center gap-2 rounded-full border border-border hover:bg-muted text-sm font-semibold">
-                <LogIn className="h-4 w-4" /> Sign in
+                <LogIn className="h-4 w-4" /> {t.signIn}
               </Link>
             )}
-            <button
-              onClick={() => setOpenCart(true)}
-              className={`relative h-10 px-4 inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-soft transition ${bumped ? "animate-bounce-in" : ""}`}
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <span className="hidden sm:inline">Cart</span>
-              {count > 0 && (
-                <span className="ml-1 inline-flex h-6 min-w-6 px-1.5 items-center justify-center rounded-full bg-harvest text-harvest-foreground text-xs font-bold">{count}</span>
-              )}
-            </button>
+            {isFarmer ? (
+              <Link
+                to="/farmer-dashboard"
+                search={{ section: "listings", add: true }}
+                className="relative h-10 px-4 inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-soft transition"
+              >
+                <ClipboardList className="h-4 w-4" />
+                <span className="hidden sm:inline">{t.listings}</span>
+              </Link>
+            ) : (
+              <button
+                onClick={() => setOpenCart(true)}
+                className={`relative h-10 px-4 inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-soft transition ${bumped ? "animate-bounce-in" : ""}`}
+              >
+                <ShoppingCart className="h-4 w-4" />
+                <span className="hidden sm:inline">{t.cart}</span>
+                {count > 0 && (
+                  <span className="ml-1 inline-flex h-6 min-w-6 px-1.5 items-center justify-center rounded-full bg-harvest text-harvest-foreground text-xs font-bold">{count}</span>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </header>
-      <CartDrawer open={openCart} onClose={() => setOpenCart(false)} />
+      {!isFarmer && <CartDrawer open={openCart} onClose={() => setOpenCart(false)} />}
     </>
   );
 }

@@ -3,8 +3,10 @@ import { Leaf, Sprout, ShoppingBasket } from "lucide-react";
 import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, updateProfile,
 } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { auth, db, googleProvider } from "@/lib/firebase";
 import { useAuth, type Role } from "@/lib/auth-context";
+import { setWelcomeIntent } from "@/lib/welcome";
 
 export default function LoginPanel() {
   const { role, setRole } = useAuth();
@@ -15,22 +17,79 @@ export default function LoginPanel() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const openHome = (userRole: Role, mode: "signin" | "signup", userName?: string) => {
+    setWelcomeIntent({ role: userRole, mode, name: userName });
+    window.location.href = "/";
+  };
+
+  const saveUserDoc = async (uid: string, userName: string, userEmail: string, userRole: Role) => {
+    const userRef = doc(db, "users", uid);
+
+    await setDoc(
+      userRef,
+      {
+        uid,
+        name: userName,
+        email: userEmail,
+        role: userRole,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    const snap = await getDoc(userRef);
+    if (!snap.exists() || snap.data().role !== userRole) {
+      throw new Error("Firestore user role was not saved. Check Firestore rules.");
+    }
+  };
+
+  const getSavedRole = async (uid: string, fallbackRole: Role) => {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    const savedRole = snap.exists() ? snap.data().role : undefined;
+
+    if (savedRole === "consumer" || savedRole === "farmer") {
+      return savedRole;
+    }
+
+    return fallbackRole;
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(""); setBusy(true);
     try {
       if (mode === "signin") {
-        await signInWithEmailAndPassword(auth, email, pw);
+        const c = await signInWithEmailAndPassword(auth, email, pw);
+        const savedRole = await getSavedRole(c.user.uid, role);
+        setRole(savedRole);
+        openHome(savedRole, "signin", c.user.displayName || email);
       } else {
         const c = await createUserWithEmailAndPassword(auth, email, pw);
         if (name) await updateProfile(c.user, { displayName: name });
+        await saveUserDoc(c.user.uid, name, email, role);
+        setRole(role);
+        openHome(role, "signup", name || email);
       }
     } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   };
 
   const google = async () => {
     setErr(""); setBusy(true);
-    try { await signInWithPopup(auth, googleProvider); }
+    try {
+      const c = await signInWithPopup(auth, googleProvider);
+      const userRef = doc(db, "users", c.user.uid);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists() || mode === "signup") {
+        await saveUserDoc(c.user.uid, c.user.displayName || "", c.user.email || "", role);
+      }
+
+      const savedRole = mode === "signup" ? role : await getSavedRole(c.user.uid, role);
+      setRole(savedRole);
+      openHome(savedRole, mode, c.user.displayName || c.user.email || "");
+    }
     catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   };
 

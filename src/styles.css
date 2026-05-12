@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
@@ -120,7 +121,7 @@
   h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: -0.02em; }
 }
 
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+
 
 /* Custom keyframes */
 @keyframes float-up { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-18px) rotate(4deg); } }
@@ -137,6 +138,8 @@
 @keyframes leaf-grow { 0% { transform: scale(0) rotate(-180deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 @keyframes route-dash { to { stroke-dashoffset: -200; } }
 @keyframes bounce-in { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@keyframes soft-fade { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes welcome-pop { 0% { opacity: 0; transform: translateY(18px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 
 .animate-float-up { animation: float-up 6s ease-in-out infinite; }
 .animate-float-side { animation: float-side 8s ease-in-out infinite; }
@@ -147,6 +150,8 @@
 .animate-leaf-grow { animation: leaf-grow 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .animate-route { stroke-dasharray: 8 6; animation: route-dash 1.2s linear infinite; }
 .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.animate-soft-fade { animation: soft-fade 0.25s ease-out; }
+.animate-welcome-pop { animation: welcome-pop 0.4s cubic-bezier(0.2, 0.9, 0.25, 1.15); }
 
 .gradient-hero { background: var(--gradient-hero); }
 .gradient-fresh { background: var(--gradient-fresh); }
