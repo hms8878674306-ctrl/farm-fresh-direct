@@ -56,10 +56,10 @@ function Index() {
           <div className="mx-auto max-w-7xl w-full">
             <div className="max-w-2xl text-primary-foreground">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur px-4 py-1.5 text-xs font-semibold uppercase tracking-widest">
-                <Sprout className="h-3.5 w-3.5" /> {seasonalTheme.emoji} {seasonalTheme.label}
+                <Sprout className="h-3.5 w-3.5" /> {seasonalTheme.emoji} {t.heroEyebrow}
               </span>
               <h1 className="display mt-5 text-5xl md:text-7xl font-extrabold leading-[1.05]">
-                Freshness <span className="shimmer-text">Direct</span><br />From Farm.
+                {t.heroTitleA}<br /><span className="shimmer-text">{t.heroTitleB}</span>
               </h1>
               <p className="mt-5 text-lg md:text-xl text-white/85 max-w-xl">
                 Real food. Real farmers. Zero middlemen. Order today, get it tomorrow — pay cash on delivery.
