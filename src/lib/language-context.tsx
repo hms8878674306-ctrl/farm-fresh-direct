@@ -132,6 +132,22 @@ const en: Dictionary = {
   pendingOrders: "Pending orders",
   topProduct: "Top product",
   followers: "Followers",
+  freshHarvestedToday: "Harvested Today",
+  freshOneDay: "1 Day Fresh",
+  freshOrganic: "Organic Certified",
+  productP1: "Vine Tomatoes",
+  productP2: "Red Onions",
+  productP3: "Alphonso Mango",
+  productP4: "Palak Spinach",
+  productP5: "Green Capsicum",
+  productP6: "Baby Carrots",
+  farmerF1: "Ramesh Patel",
+  farmerF2: "Lakshmi Devi",
+  farmerF3: "Arjun Singh",
+  unitKg: "kg",
+  unitDozen: "dozen",
+  unitBunch: "bunch",
+  km: "km",
 };
 
 const hi: Dictionary = {
@@ -289,6 +305,23 @@ const hi: Dictionary = {
   pendingOrders: "\u092c\u093e\u0915\u0940 \u0911\u0930\u094d\u0921\u0930",
   topProduct: "\u0936\u0940\u0930\u094d\u0937 \u0909\u0924\u094d\u092a\u093e\u0926",
   followers: "\u092b\u0949\u0932\u094b\u0905\u0930",
+  freshHarvestedToday: "\u0906\u091c \u0924\u094b\u0921\u093c\u093e \u0917\u092f\u093e",
+  freshOneDay: "1 \u0926\u093f\u0928 \u0924\u093e\u091c\u093c\u093e",
+  freshOrganic:
+    "\u0911\u0930\u094d\u0917\u0948\u0928\u093f\u0915 \u092a\u094d\u0930\u092e\u093e\u0923\u093f\u0924",
+  productP1: "\u092c\u0947\u0932 \u091f\u092e\u093e\u091f\u0930",
+  productP2: "\u0932\u093e\u0932 \u092a\u094d\u092f\u093e\u091c",
+  productP3: "\u0905\u0932\u094d\u092b\u094b\u0902\u0938\u094b \u0906\u092e",
+  productP4: "\u092a\u093e\u0932\u0915",
+  productP5: "\u0939\u0930\u0940 \u0936\u093f\u092e\u0932\u093e \u092e\u093f\u0930\u094d\u091a",
+  productP6: "\u091b\u094b\u091f\u0940 \u0917\u093e\u091c\u0930",
+  farmerF1: "\u0930\u092e\u0947\u0936 \u092a\u091f\u0947\u0932",
+  farmerF2: "\u0932\u0915\u094d\u0937\u094d\u092e\u0940 \u0926\u0947\u0935\u0940",
+  farmerF3: "\u0905\u0930\u094d\u091c\u0941\u0928 \u0938\u093f\u0902\u0939",
+  unitKg: "\u0915\u093f\u0932\u094b",
+  unitDozen: "\u0926\u0930\u094d\u091c\u0928",
+  unitBunch: "\u0917\u091a\u094d\u091b\u093e",
+  km: "\u0915\u093f\u092e\u0940",
 };
 
 const mr: Dictionary = {
@@ -333,6 +366,25 @@ const mr: Dictionary = {
   myProducts: "\u092e\u093e\u091d\u0947 \u0909\u0924\u094d\u092a\u093e\u0926",
   tollFree:
     "\u0921\u0947\u092e\u094b \u091f\u094b\u0932-\u092b\u094d\u0930\u0940 \u092e\u0926\u0924: 1800-123-4567",
+  freshHarvestedToday: "\u0906\u091c \u0924\u094b\u0921\u0932\u0947\u0932\u0947",
+  freshOneDay: "1 \u0926\u093f\u0935\u0938 \u0924\u093e\u091c\u0947",
+  freshOrganic:
+    "\u0938\u0947\u0902\u0926\u094d\u0930\u093f\u092f \u092a\u094d\u0930\u092e\u093e\u0923\u093f\u0924",
+  productP1:
+    "\u0935\u0947\u0932\u0940\u0935\u0930\u091a\u0947 \u091f\u094b\u092e\u0945\u091f\u094b",
+  productP2: "\u0932\u093e\u0932 \u0915\u093e\u0902\u0926\u0947",
+  productP3: "\u0939\u093e\u092a\u0942\u0938 \u0906\u0902\u092c\u093e",
+  productP4: "\u092a\u093e\u0932\u0915",
+  productP5:
+    "\u0939\u093f\u0930\u0935\u0940 \u0922\u094b\u092c\u0933\u0940 \u092e\u093f\u0930\u091a\u0940",
+  productP6: "\u091b\u094b\u091f\u0947 \u0917\u093e\u091c\u0930",
+  farmerF1: "\u0930\u092e\u0947\u0936 \u092a\u091f\u0947\u0932",
+  farmerF2: "\u0932\u0915\u094d\u0937\u094d\u092e\u0940 \u0926\u0947\u0935\u0940",
+  farmerF3: "\u0905\u0930\u094d\u091c\u0941\u0928 \u0938\u093f\u0902\u0939",
+  unitKg: "\u0915\u093f\u0932\u094b",
+  unitDozen: "\u0921\u091d\u0928",
+  unitBunch: "\u091c\u0941\u0921\u0940",
+  km: "\u0915\u093f\u092e\u0940",
 };
 
 const dictionaries: Record<Language, Dictionary> = { en, hi, mr };
