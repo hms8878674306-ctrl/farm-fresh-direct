@@ -4,8 +4,10 @@ import { useDeals } from "@/lib/deals-store";
 import { deliveryFee, FREE_DELIVERY_THRESHOLD } from "@/lib/delivery";
 import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useLanguage } from "@/lib/language-context";
 
 export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useLanguage();
   const s = useCart();
   useDeals(); // re-render when deals change
   const total = cartTotal(s);
@@ -19,7 +21,7 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
       <div onClick={onClose} className={`fixed inset-0 z-50 bg-black/50 transition-opacity ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`} />
       <aside className={`fixed top-0 right-0 z-50 h-full w-full max-w-md bg-background shadow-glow flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}>
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="display text-2xl font-bold">Your Basket</h2>
+          <h2 className="display text-2xl font-bold">{t.yourBasket}</h2>
           <button onClick={onClose} className="h-9 w-9 rounded-full hover:bg-muted inline-flex items-center justify-center"><X className="h-5 w-5" /></button>
         </div>
 
@@ -27,7 +29,7 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
           {s.items.length === 0 && (
             <div className="text-center py-16 text-muted-foreground">
               <div className="text-6xl mb-4">🧺</div>
-              <p>Your basket is empty.</p>
+              <p>{t.basketEmpty}</p>
             </div>
           )}
           {s.items.map(({ product, qty }) => {
@@ -39,7 +41,7 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
               <div className="flex-1 min-w-0">
                 <div className="font-semibold truncate flex items-center gap-1.5">
                   {product.name}
-                  {negotiated && <span title="Negotiated price" className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase text-fresh"><Sparkles className="h-3 w-3" /> Deal</span>}
+                  {negotiated && <span title={t.negotiatedPrice} className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase text-fresh"><Sparkles className="h-3 w-3" /> {t.deal}</span>}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {negotiated ? <><span className="line-through mr-1">₹{product.price}</span><span className="text-fresh font-semibold">₹{unit}</span></> : <>₹{unit}</>}/{product.unit}
@@ -62,21 +64,21 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
         <div className="border-t border-border p-5 space-y-3">
           {total > 0 && total < FREE_DELIVERY_THRESHOLD && (
             <div className="rounded-lg bg-harvest/10 border border-harvest/30 px-3 py-2 text-[11px]">
-              Add <b>₹{FREE_DELIVERY_THRESHOLD - total}</b> more for <b>FREE delivery</b> 🚚
+              {t.addMoreForFreeDelivery.replace("{amount}", String(FREE_DELIVERY_THRESHOLD - total))}
             </div>
           )}
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>₹{total}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t.subtotal}</span><span>₹{total}</span></div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Delivery {avgKm > 0 && <span className="text-[10px]">(~{avgKm.toFixed(1)} km)</span>}</span>
-            {fee === 0 ? <span className="text-fresh font-semibold">FREE</span> : <span>₹{fee}</span>}
+            <span className="text-muted-foreground">{t.deliveryFeeLabel} {avgKm > 0 && <span className="text-[10px]">(~{avgKm.toFixed(1)} {t.km})</span>}</span>
+            {fee === 0 ? <span className="text-fresh font-semibold">{t.freeDelivery}</span> : <span>₹{fee}</span>}
           </div>
-          <div className="flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">₹{grand}</span></div>
+          <div className="flex justify-between font-bold text-lg"><span>{t.total}</span><span className="text-primary">₹{grand}</span></div>
           <Link
             to="/checkout"
             onClick={onClose}
             className={`block text-center w-full h-12 leading-[3rem] rounded-xl font-bold transition ${s.items.length === 0 ? "bg-muted text-muted-foreground pointer-events-none" : "bg-primary text-primary-foreground hover:bg-primary-glow shadow-glow"}`}
           >
-            Checkout →
+            {t.checkoutGo}
           </Link>
         </div>
       </aside>

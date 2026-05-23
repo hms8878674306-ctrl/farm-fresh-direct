@@ -23,6 +23,7 @@ import {
 import { Leaf } from "lucide-react";
 import { useAuth, type Role } from "@/lib/auth-context";
 import { setWelcomeIntent } from "@/lib/welcome";
+import { useLanguage } from "@/lib/language-context";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/signup")({
 });
 
 function Signup() {
+  const { t } = useLanguage();
   const nav = useNavigate();
   const { setRole: setAuthRole } = useAuth();
 
@@ -110,7 +112,7 @@ function Signup() {
       );
 
       if (!saved) {
-        setErr("Firestore database failed.");
+        setErr(t.firestoreFailed);
         return;
       }
 
@@ -146,7 +148,7 @@ function Signup() {
       );
 
       if (!saved) {
-        setErr("Firestore database failed.");
+        setErr(t.firestoreFailed);
         return;
       }
 
@@ -171,11 +173,11 @@ function Signup() {
         </div>
 
         <h1 className="display text-3xl font-extrabold">
-          Join KrishiDirect
+          {t.joinKrishi}
         </h1>
 
         <p className="text-sm text-muted-foreground">
-          Fresh from farm, straight to you
+          {t.signupTagline}
         </p>
       </div>
 
@@ -184,7 +186,7 @@ function Signup() {
         className="rounded-2xl bg-card border border-border p-6 space-y-3"
       >
         <input
-          placeholder="Full name"
+          placeholder={t.fullName}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full h-11 px-4 rounded-xl bg-background border border-border focus:border-primary focus:outline-none"
@@ -193,7 +195,7 @@ function Signup() {
         <input
           required
           type="email"
-          placeholder="Email"
+          placeholder={t.email}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full h-11 px-4 rounded-xl bg-background border border-border focus:border-primary focus:outline-none"
@@ -202,7 +204,7 @@ function Signup() {
         <input
           required
           type="password"
-          placeholder="Password"
+          placeholder={t.password}
           value={pw}
           onChange={(e) => setPw(e.target.value)}
           className="w-full h-11 px-4 rounded-xl bg-background border border-border focus:border-primary focus:outline-none"
@@ -214,11 +216,11 @@ function Signup() {
           className="w-full h-11 px-4 rounded-xl bg-background border border-border focus:border-primary focus:outline-none"
         >
           <option value="consumer">
-            Consumer
+            {t.consumerRole}
           </option>
 
           <option value="farmer">
-            Farmer
+            {t.farmerRole}
           </option>
         </select>
 
@@ -232,7 +234,7 @@ function Signup() {
           disabled={busy}
           className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50"
         >
-          {busy ? "Creating..." : "Create account"}
+          {busy ? t.creatingAccount : t.createAccount}
         </button>
 
         <button
@@ -241,16 +243,16 @@ function Signup() {
           disabled={busy}
           className="w-full h-11 rounded-xl border border-border font-semibold hover:bg-muted"
         >
-          Continue with Google
+          {t.continueGoogle}
         </button>
 
         <p className="text-center text-sm text-muted-foreground pt-2">
-          Already have an account?{" "}
+          {t.alreadyHaveAccount}{" "}
           <Link
             to="/login"
             className="text-primary font-semibold"
           >
-            Sign in
+            {t.signIn}
           </Link>
         </p>
       </form>

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { products } from "@/lib/data";
+import { useLanguage } from "@/lib/language-context";
 import {
   Package,
   Heart,
@@ -15,15 +16,16 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function Dashboard() {
+  const { t } = useLanguage();
   return (
     <main className="mx-auto max-w-7xl px-4 md:px-8 py-10">
       <div className="mb-8">
         <h1 className="display text-4xl font-extrabold">
-          Consumer Dashboard
+          {t.consumerDashboardTitle}
         </h1>
 
         <p className="text-muted-foreground mt-2">
-          Welcome back to KrishiDirect 🌱
+          {t.consumerDashboardWelcome}
         </p>
       </div>
 
@@ -63,6 +65,7 @@ function Stat({
 }
 
 function ConsumerView() {
+  const { t } = useLanguage();
   const favs = products.slice(0, 3);
 
   return (
@@ -70,28 +73,28 @@ function ConsumerView() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Stat
           Icon={Package}
-          label="Orders"
+          label={t.statOrders}
           value="12"
           accent="bg-primary"
         />
 
         <Stat
           Icon={Heart}
-          label="Favorites"
+          label={t.statFavorites}
           value="8"
           accent="gradient-harvest"
         />
 
         <Stat
           Icon={RotateCcw}
-          label="Reorders"
+          label={t.statReorders}
           value="5"
           accent="gradient-fresh"
         />
 
         <Stat
           Icon={IndianRupee}
-          label="Saved"
+          label={t.statSaved}
           value="₹420"
           accent="bg-harvest"
         />
@@ -100,11 +103,11 @@ function ConsumerView() {
       <section className="rounded-3xl bg-card border border-border p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="display text-2xl font-bold">
-            Reorder favourites
+            {t.reorderFavourites}
           </h2>
 
           <span className="text-xs text-muted-foreground">
-            One-tap reorder
+            {t.oneTapReorder}
           </span>
         </div>
 
@@ -140,20 +143,19 @@ function ConsumerView() {
 
       <section className="rounded-3xl gradient-fresh p-6 text-primary-foreground">
         <div className="text-xs uppercase tracking-widest opacity-90">
-          Subscription Basket
+          {t.subscriptionEyebrow}
         </div>
 
         <h2 className="display text-3xl font-extrabold mt-1">
-          Weekly Veggie Box
+          {t.weeklyVeggieBox}
         </h2>
 
         <p className="opacity-90 text-sm mt-2 max-w-md">
-          Get farm-fresh vegetables delivered every week.
-          Pause or cancel anytime.
+          {t.weeklyVeggieBoxCopy}
         </p>
 
         <button className="mt-4 px-5 py-2.5 rounded-full bg-white text-primary font-bold text-sm">
-          Subscribe — ₹399/week
+          {t.subscribeBtn}
         </button>
       </section>
     </div>

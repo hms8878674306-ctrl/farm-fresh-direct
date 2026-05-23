@@ -22,6 +22,7 @@ import {
 import { Leaf } from "lucide-react";
 import { setWelcomeIntent } from "@/lib/welcome";
 import type { Role } from "@/lib/auth-context";
+import { useLanguage } from "@/lib/language-context";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
 
@@ -147,11 +149,11 @@ function Login() {
         </div>
 
         <h1 className="display text-3xl font-extrabold">
-          Welcome back
+          {t.welcomeBackLogin}
         </h1>
 
         <p className="text-sm text-muted-foreground">
-          Sign in to KrishiDirect
+          {t.signInToKrishi}
         </p>
       </div>
 
@@ -162,7 +164,7 @@ function Login() {
         <input
           required
           type="email"
-          placeholder="Email"
+          placeholder={t.email}
           value={email}
           onChange={(e) =>
             setEmail(e.target.value)
@@ -173,7 +175,7 @@ function Login() {
         <input
           required
           type="password"
-          placeholder="Password"
+          placeholder={t.password}
           value={pw}
           onChange={(e) =>
             setPw(e.target.value)
@@ -192,15 +194,15 @@ function Login() {
           className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50"
         >
           {busy
-            ? "Signing in…"
-            : "Sign in"}
+            ? t.signingIn
+            : t.signIn}
         </button>
 
         <div className="relative my-2">
           <div className="border-t border-border" />
 
           <span className="absolute left-1/2 -top-2.5 -translate-x-1/2 bg-card px-2 text-xs text-muted-foreground">
-            or
+            {t.orDivider}
           </span>
         </div>
 
@@ -210,16 +212,16 @@ function Login() {
           disabled={busy}
           className="w-full h-11 rounded-xl border border-border font-semibold hover:bg-muted flex items-center justify-center gap-2"
         >
-          Continue with Google
+          {t.continueGoogle}
         </button>
 
         <p className="text-center text-sm text-muted-foreground pt-2">
-          New here?{" "}
+          {t.newHere}{" "}
           <Link
             to="/signup"
             className="text-primary font-semibold"
           >
-            Create account
+            {t.createAccount}
           </Link>
         </p>
       </form>

@@ -7,9 +7,11 @@ import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { useAuth, type Role } from "@/lib/auth-context";
 import { setWelcomeIntent } from "@/lib/welcome";
+import { useLanguage } from "@/lib/language-context";
 
 export default function LoginPanel() {
   const { role, setRole } = useAuth();
+  const { t } = useLanguage();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -17,8 +19,10 @@ export default function LoginPanel() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const openHome = (userRole: Role, mode: "signin" | "signup", userName?: string) => {
-    setWelcomeIntent({ role: userRole, mode, name: userName });
+  const roleLabel = role === "farmer" ? t.farmerRole : t.consumerRole;
+
+  const openHome = (userRole: Role, authMode: "signin" | "signup", userName?: string) => {
+    setWelcomeIntent({ role: userRole, mode: authMode, name: userName });
     window.location.href = "/";
   };
 
@@ -93,7 +97,7 @@ export default function LoginPanel() {
     catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   };
 
-  const RoleBtn = ({ value, Icon, label, desc }: { value: Role; Icon: any; label: string; desc: string }) => (
+  const RoleBtn = ({ value, Icon, label, desc }: { value: Role; Icon: typeof Leaf; label: string; desc: string }) => (
     <button type="button" onClick={() => setRole(value)}
       className={`flex-1 text-left rounded-xl border-2 p-3 transition ${role === value ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}>
       <Icon className={`h-5 w-5 mb-1.5 ${role === value ? "text-primary" : "text-muted-foreground"}`} />
@@ -110,50 +114,48 @@ export default function LoginPanel() {
             <Leaf className="h-7 w-7 text-primary-foreground" />
           </div>
           <h1 className="display text-3xl font-extrabold">Krishi<span className="text-primary">Direct</span></h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to continue</p>
+          <p className="text-sm text-muted-foreground mt-1">{t.signInToContinue}</p>
         </div>
 
         <div className="rounded-2xl bg-card border border-border p-6 space-y-4">
-          {/* Role selector */}
           <div>
-            <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-bold mb-2">I am a</div>
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-bold mb-2">{t.iAmA}</div>
             <div className="flex gap-2">
-              <RoleBtn value="consumer" Icon={ShoppingBasket} label="Consumer" desc="Buy fresh produce" />
-              <RoleBtn value="farmer" Icon={Sprout} label="Farmer" desc="Sell my harvest" />
+              <RoleBtn value="consumer" Icon={ShoppingBasket} label={t.consumerRole} desc={t.buyFresh} />
+              <RoleBtn value="farmer" Icon={Sprout} label={t.farmerRole} desc={t.sellHarvest} />
             </div>
           </div>
 
-          {/* Mode tabs */}
           <div className="flex rounded-xl bg-secondary p-1">
             {(["signin", "signup"] as const).map(m => (
               <button key={m} onClick={() => setMode(m)} type="button"
                 className={`flex-1 h-9 rounded-lg text-sm font-bold transition ${mode === m ? "bg-background shadow-sm" : "text-muted-foreground"}`}>
-                {m === "signin" ? "Sign in" : "Sign up"}
+                {m === "signin" ? t.signIn : t.signUpTab}
               </button>
             ))}
           </div>
 
           <form onSubmit={submit} className="space-y-3">
             {mode === "signup" && (
-              <input placeholder="Full name" value={name} onChange={e => setName(e.target.value)}
+              <input placeholder={t.fullName} value={name} onChange={e => setName(e.target.value)}
                 className="w-full h-11 px-4 rounded-xl bg-background border border-border focus:border-primary focus:outline-none" />
             )}
-            <input required type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
+            <input required type="email" placeholder={t.email} value={email} onChange={e => setEmail(e.target.value)}
               className="w-full h-11 px-4 rounded-xl bg-background border border-border focus:border-primary focus:outline-none" />
-            <input required type="password" placeholder="Password" value={pw} onChange={e => setPw(e.target.value)}
+            <input required type="password" placeholder={t.password} value={pw} onChange={e => setPw(e.target.value)}
               className="w-full h-11 px-4 rounded-xl bg-background border border-border focus:border-primary focus:outline-none" />
             {err && <p className="text-xs text-destructive">{err}</p>}
             <button disabled={busy} className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50">
-              {busy ? "Please wait…" : (mode === "signin" ? `Sign in as ${role}` : `Create ${role} account`)}
+              {busy ? t.pleaseWait : (mode === "signin" ? t.signInAsRole.replace("{role}", roleLabel) : t.createRoleAccount.replace("{role}", roleLabel))}
             </button>
           </form>
 
-          <div className="relative"><div className="border-t border-border" /><span className="absolute left-1/2 -top-2.5 -translate-x-1/2 bg-card px-2 text-xs text-muted-foreground">or</span></div>
+          <div className="relative"><div className="border-t border-border" /><span className="absolute left-1/2 -top-2.5 -translate-x-1/2 bg-card px-2 text-xs text-muted-foreground">{t.orDivider}</span></div>
 
           <button type="button" onClick={google} disabled={busy}
             className="w-full h-11 rounded-xl border border-border font-semibold hover:bg-muted flex items-center justify-center gap-2">
             <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.1 7.1 29.3 5 24 5 16.3 5 9.6 9.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.6l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.2 5.2C41 35.1 44 30 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-            Continue with Google
+            {t.continueGoogle}
           </button>
         </div>
       </div>

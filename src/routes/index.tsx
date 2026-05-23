@@ -316,7 +316,7 @@ function FarmerHome() {
       setDraftStock("");
     } catch (error) {
       console.error(error);
-      alert("Could not publish listing. Please check Firestore product write rules.");
+      alert(t.failedPublishListing);
     } finally {
       setSaving(false);
     }

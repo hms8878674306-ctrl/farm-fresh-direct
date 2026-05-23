@@ -115,7 +115,7 @@ export function ProductCard({ product }: { product: Product }) {
             className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
           >
             <Handshake className="h-4 w-4" />
-            {t.negotiateOffers}
+            {t.negotiateBtn}
           </Link>
         </div>
       </div>

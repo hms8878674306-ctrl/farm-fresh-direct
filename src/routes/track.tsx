@@ -3,19 +3,20 @@ import { useEffect, useMemo, useState } from "react";
 import { Phone, MessageCircle, MapPin, Package, Check, Truck, Sprout, Home, PackageCheck } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, updateDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
+import { useLanguage } from "@/lib/language-context";
+import type { LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/track")({
   head: () => ({ meta: [{ title: "Track Order — KrishiDirect" }] }),
   component: Track,
 });
 
-const STAGES = [
-  { key: "confirmed", label: "Order Confirmed", desc: "Farmer notified instantly",   Icon: Check },
-  { key: "harvested", label: "Freshly Harvested", desc: "Picked from the farm",       Icon: Sprout },
-  { key: "packed",    label: "Packed & Ready",    desc: "Quality-checked, sealed",    Icon: PackageCheck },
-  { key: "shipped",   label: "Out for Delivery",  desc: "Rider on the way",           Icon: Truck },
-  { key: "delivered", label: "Delivered",          desc: "Enjoy fresh produce!",       Icon: Home },
-];
+type Stage = {
+  key: string;
+  label: string;
+  desc: string;
+  Icon: LucideIcon;
+};
 
 type Order = {
   id: string;
@@ -36,7 +37,23 @@ function fmtClock(s: number) {
   return `${m}:${sec}`;
 }
 
+function useTrackStages(): Stage[] {
+  const { t } = useLanguage();
+  return useMemo(
+    () => [
+      { key: "confirmed", label: t.stageConfirmed, desc: t.stageConfirmedDesc, Icon: Check },
+      { key: "harvested", label: t.stageHarvested, desc: t.stageHarvestedDesc, Icon: Sprout },
+      { key: "packed", label: t.stagePacked, desc: t.stagePackedDesc, Icon: PackageCheck },
+      { key: "shipped", label: t.stageShipped, desc: t.stageShippedDesc, Icon: Truck },
+      { key: "delivered", label: t.stageDelivered, desc: t.stageDeliveredDesc, Icon: Home },
+    ],
+    [t],
+  );
+}
+
 function Track() {
+  const { t } = useLanguage();
+  const STAGES = useTrackStages();
   const [orderId, setOrderId] = useState<string | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [eta, setEta] = useState(0);
@@ -52,22 +69,21 @@ function Track() {
     const unsub = onSnapshot(doc(db, "orders", orderId), (snap) => {
       setLoading(false);
       if (!snap.exists()) return;
-      const v = snap.data() as any;
+      const v = snap.data() as Omit<Order, "id">;
       setOrder({ id: snap.id, ...v });
       setEta((v.etaMinutes || 0) * 60);
     }, () => setLoading(false));
     return () => unsub();
   }, [orderId]);
 
-  // Live ETA countdown
   useEffect(() => {
     if (!order || order.stage >= STAGES.length - 1) return;
     const i = setInterval(() => setEta(e => Math.max(0, e - 1)), 1000);
     return () => clearInterval(i);
-  }, [order?.stage]);
+  }, [order?.stage, STAGES.length]);
 
   const stage = order?.stage ?? 0;
-  const stageProgress = useMemo(() => ((stage + 1) / STAGES.length) * 100, [stage]);
+  const stageProgress = useMemo(() => ((stage + 1) / STAGES.length) * 100, [stage, STAGES.length]);
 
   const advance = async () => {
     if (!order) return;
@@ -83,16 +99,16 @@ function Track() {
   };
 
   if (loading) {
-    return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-muted-foreground">Loading your order…</main>;
+    return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-muted-foreground">{t.loadingOrder}</main>;
   }
 
   if (!orderId || !order) {
     return (
       <main className="mx-auto max-w-md px-4 py-20 text-center">
         <div className="text-6xl mb-4">📦</div>
-        <h1 className="display text-2xl font-bold">No active order</h1>
-        <p className="text-muted-foreground mt-2">Place an order to see live tracking here.</p>
-        <Link to="/shop" search={{ q: "" }} className="inline-block mt-6 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">Shop now</Link>
+        <h1 className="display text-2xl font-bold">{t.noActiveOrder}</h1>
+        <p className="text-muted-foreground mt-2">{t.noActiveOrderCopy}</p>
+        <Link to="/shop" search={{ q: "" }} className="inline-block mt-6 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">{t.shopNow}</Link>
       </main>
     );
   }
@@ -104,15 +120,14 @@ function Track() {
     <main className="mx-auto max-w-3xl px-4 md:px-8 py-10">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="display text-4xl font-extrabold">Live Order Tracking</h1>
-          <p className="text-muted-foreground mt-1">Order #{order.id.slice(0, 8).toUpperCase()} · ₹{order.total}</p>
+          <h1 className="display text-4xl font-extrabold">{t.trackTitle}</h1>
+          <p className="text-muted-foreground mt-1">{t.trackOrderLabel} #{order.id.slice(0, 8).toUpperCase()} · ₹{order.total}</p>
         </div>
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fresh/15 text-fresh text-xs font-bold">
-          <span className="h-2 w-2 rounded-full bg-fresh animate-pulse" /> Live
+          <span className="h-2 w-2 rounded-full bg-fresh animate-pulse" /> {t.live}
         </span>
       </div>
 
-      {/* ETA + Map */}
       <section className="mt-6 rounded-3xl overflow-hidden border border-border bg-card shadow-card">
         <div className="relative h-56 gradient-fresh overflow-hidden">
           <svg viewBox="0 0 400 200" className="absolute inset-0 w-full h-full opacity-90" preserveAspectRatio="none">
@@ -124,15 +139,14 @@ function Track() {
             </circle>
           </svg>
           <div className="absolute top-4 left-4 text-primary-foreground">
-            <div className="text-xs uppercase tracking-widest opacity-80">{delivered ? "Delivered" : "Arriving in"}</div>
+            <div className="text-xs uppercase tracking-widest opacity-80">{delivered ? t.deliveredStatus : t.arrivingIn}</div>
             <div className="display text-5xl font-extrabold">{delivered ? "✓" : fmtClock(eta)}</div>
           </div>
           <div className="absolute bottom-4 right-4 text-primary-foreground/90 text-xs flex items-center gap-1">
-            <MapPin className="h-3.5 w-3.5" /> {delivered ? "At your door" : `${(eta / 60 * 0.15).toFixed(1)} km away`}
+            <MapPin className="h-3.5 w-3.5" /> {delivered ? t.atYourDoor : `${(eta / 60 * 0.15).toFixed(1)} ${t.kmAway}`}
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="h-1.5 bg-secondary">
           <div className="h-full gradient-fresh transition-all duration-700" style={{ width: `${stageProgress}%` }} />
         </div>
@@ -141,16 +155,15 @@ function Track() {
           <div className="h-14 w-14 rounded-full gradient-harvest flex items-center justify-center text-2xl">🛵</div>
           <div className="flex-1">
             <div className="font-bold">{rider.name}</div>
-            <div className="text-xs text-muted-foreground">Your delivery partner · ⭐ {rider.rating}</div>
+            <div className="text-xs text-muted-foreground">{t.yourDeliveryPartner} · ⭐ {rider.rating}</div>
           </div>
           <a href={`tel:${rider.phone}`} aria-label="Call rider" className="h-11 w-11 rounded-full bg-fresh text-fresh-foreground inline-flex items-center justify-center hover:opacity-90"><Phone className="h-5 w-5" /></a>
-          <Link to="/chat" search={{ farmerId: "f1" }} aria-label="Chat" className="h-11 w-11 rounded-full bg-secondary inline-flex items-center justify-center hover:bg-muted"><MessageCircle className="h-5 w-5" /></Link>
+          <Link to="/chat" search={{ farmerId: "f1" }} aria-label={t.chat} className="h-11 w-11 rounded-full bg-secondary inline-flex items-center justify-center hover:bg-muted"><MessageCircle className="h-5 w-5" /></Link>
         </div>
       </section>
 
-      {/* Stages timeline */}
       <section className="mt-6 rounded-3xl bg-card border border-border p-6">
-        <h2 className="display text-xl font-bold mb-5">Delivery Timeline</h2>
+        <h2 className="display text-xl font-bold mb-5">{t.deliveryTimeline}</h2>
         <div className="space-y-1">
           {STAGES.map((s, i) => {
             const done = i <= stage;
@@ -180,17 +193,16 @@ function Track() {
         {!delivered && (
           <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-border">
             <button onClick={advance} className="text-xs px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary-glow font-semibold">
-              Simulate next stage →
+              {t.simulateNextStage}
             </button>
-            <span className="text-[11px] text-muted-foreground self-center">Demo: pushes a real Firestore update — all open tabs sync live.</span>
+            <span className="text-[11px] text-muted-foreground self-center">{t.simulateHint}</span>
           </div>
         )}
       </section>
 
-      {/* Items */}
       {order.items && order.items.length > 0 && (
         <section className="mt-6 rounded-3xl bg-card border border-border p-6">
-          <h2 className="font-bold text-lg mb-3 flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> In this order</h2>
+          <h2 className="font-bold text-lg mb-3 flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> {t.inThisOrder}</h2>
           <div className="grid gap-2">
             {order.items.map((it, i) => (
               <div key={i} className="flex justify-between text-sm py-1.5 border-b border-border last:border-0">
