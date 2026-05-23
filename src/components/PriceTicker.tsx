@@ -1,7 +1,9 @@
 import { priceFlash } from "@/lib/data";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useLanguage } from "@/lib/language-context";
 
 export function PriceTicker() {
+  const { t } = useLanguage();
   const items = [...priceFlash, ...priceFlash];
   return (
     <div className="overflow-hidden border-y border-border bg-card py-3">
@@ -13,7 +15,7 @@ export function PriceTicker() {
             <div key={i} className="flex items-center gap-2 text-sm font-semibold">
               <span>{p.name}</span>
               <Icon className={`h-4 w-4 ${color}`} />
-              <span className={color}>{p.delta > 0 ? "+" : ""}₹{p.delta} today</span>
+              <span className={color}>{p.delta > 0 ? "+" : ""}₹{p.delta} {t.priceDeltaToday}</span>
             </div>
           );
         })}

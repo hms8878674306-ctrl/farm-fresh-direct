@@ -3,6 +3,7 @@ import { products } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { useLanguage } from "@/lib/language-context";
 
 export const Route = createFileRoute("/shop")({
   validateSearch: (s: Record<string, unknown>): { q?: string } => ({ q: (s.q as string) || "" }),
@@ -10,8 +11,16 @@ export const Route = createFileRoute("/shop")({
   component: Shop,
 });
 
+const CAT_KEYS: Record<string, string> = {
+  all: "catAll",
+  vegetable: "catVegetable",
+  fruit: "catFruit",
+  leafy: "catLeafy",
+};
+
 function Shop() {
   const { q } = Route.useSearch();
+  const { t } = useLanguage();
   const [query, setQuery] = useState(q || "");
   const [cat, setCat] = useState<string>("all");
 
@@ -23,8 +32,8 @@ function Shop() {
   return (
     <main className="mx-auto max-w-7xl px-4 md:px-8 py-10">
       <div className="mb-8">
-        <h1 className="display text-4xl md:text-5xl font-extrabold">Fresh Today</h1>
-        <p className="text-muted-foreground mt-2">Hand-picked this morning by farmers near you.</p>
+        <h1 className="display text-4xl md:text-5xl font-extrabold">{t.shopTitle}</h1>
+        <p className="text-muted-foreground mt-2">{t.shopCopy}</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-8">
@@ -33,7 +42,7 @@ function Shop() {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search tomatoes, mango, spinach…"
+            placeholder={t.shopSearchPlaceholder}
             className="w-full h-12 pl-11 pr-4 rounded-full bg-card border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/30 text-sm"
           />
         </div>
@@ -41,7 +50,7 @@ function Shop() {
           {["all", "vegetable", "fruit", "leafy"].map(c => (
             <button key={c} onClick={() => setCat(c)}
               className={`px-4 h-12 rounded-full text-sm font-semibold whitespace-nowrap transition ${cat === c ? "bg-primary text-primary-foreground" : "bg-card border border-border hover:bg-muted"}`}>
-              {c === "all" ? "All" : c.charAt(0).toUpperCase() + c.slice(1)}
+              {t[CAT_KEYS[c]]}
             </button>
           ))}
         </div>
@@ -54,7 +63,7 @@ function Shop() {
       {filtered.length === 0 && (
         <div className="text-center py-20 text-muted-foreground">
           <div className="text-6xl mb-4">🌾</div>
-          <p>No produce found. Try a different search.</p>
+          <p>{t.noProduceFound}</p>
         </div>
       )}
     </main>

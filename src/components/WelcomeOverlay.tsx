@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Leaf, Store, X } from "lucide-react";
 import { consumeWelcomeIntent } from "@/lib/welcome";
 import type { Role } from "@/lib/auth-context";
+import { useLanguage } from "@/lib/language-context";
 
 type WelcomeState = {
   role: Role;
@@ -10,6 +11,7 @@ type WelcomeState = {
 };
 
 export function WelcomeOverlay() {
+  const { t } = useLanguage();
   const [welcome, setWelcome] = useState<WelcomeState | null>(null);
   const consumedRef = useRef(false);
 
@@ -59,10 +61,8 @@ export function WelcomeOverlay() {
 
   const isFarmer = welcome.role === "farmer";
   const Icon = isFarmer ? Store : Leaf;
-  const title = welcome.mode === "signup" ? "Welcome to KrishiDirect" : "Welcome back";
-  const subtitle = isFarmer
-    ? "Your farmer workspace is ready for listings, buyer offers, and orders."
-    : "Your fresh market is ready with local produce and farm-direct deals.";
+  const title = welcome.mode === "signup" ? t.welcomeOverlaySignup : t.welcomeOverlaySignin;
+  const subtitle = isFarmer ? t.farmerWelcomeSubtitle : t.consumerWelcomeSubtitle;
 
   return (
     <div
@@ -78,7 +78,7 @@ export function WelcomeOverlay() {
           type="button"
           onClick={dismiss}
           className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label="Close welcome"
+          aria-label={t.closeWelcome}
         >
           <X className="h-4 w-4" />
         </button>
@@ -87,7 +87,7 @@ export function WelcomeOverlay() {
         </div>
         <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-fresh/15 px-3 py-1 text-xs font-bold text-primary">
           <CheckCircle2 className="h-3.5 w-3.5" />
-          {isFarmer ? "Farmer mode" : "Consumer mode"}
+          {isFarmer ? t.farmerModeBadge : t.consumerModeBadge}
         </div>
         <h2 className="display mt-3 text-3xl font-extrabold">{title}</h2>
         {welcome.name && <p className="mt-1 text-sm font-semibold">{welcome.name}</p>}
@@ -97,7 +97,7 @@ export function WelcomeOverlay() {
           onClick={dismiss}
           className="mt-5 h-11 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground hover:bg-primary-glow"
         >
-          Continue
+          {t.continueBtn}
         </button>
       </div>
     </div>
