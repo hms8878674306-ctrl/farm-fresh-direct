@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/language-context";
 
 export function SploshSlogan() {
+  const { t } = useLanguage();
   const [gone, setGone] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem("krishi-splash")) { setGone(true); return; }
     sessionStorage.setItem("krishi-splash", "1");
-    const t = setTimeout(() => setGone(true), 2700);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setGone(true), 2700);
+    return () => clearTimeout(timer);
   }, []);
   if (gone) return null;
   return (
@@ -21,7 +23,7 @@ export function SploshSlogan() {
       <div className="relative text-center px-6">
         <div className="text-sm tracking-[0.4em] uppercase opacity-80 mb-4">KrishiDirect</div>
         <h1 className="display text-5xl md:text-7xl font-extrabold animate-slogan">
-          Freshness Direct <span className="shimmer-text">From Farm.</span>
+          {t.heroTitleA} <span className="shimmer-text">{t.heroTitleB}</span>
         </h1>
       </div>
     </div>

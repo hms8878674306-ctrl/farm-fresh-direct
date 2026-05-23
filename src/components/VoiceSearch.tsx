@@ -79,7 +79,7 @@ export function VoiceSearch() {
     <>
       <button
         onClick={toggle}
-        aria-label="Voice search"
+        aria-label={t.voiceSearch}
         className={`h-10 w-10 inline-flex items-center justify-center rounded-full transition ${listening ? "bg-harvest text-harvest-foreground animate-glow-pulse" : "hover:bg-muted"}`}
       >
         {listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
