@@ -1,54 +1,104 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
+import { useLanguage } from "@/lib/language-context";
+import { useAuth } from "@/lib/auth-context";
 
-// Minimal Web Speech API wrapper
-type SR = any;
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: SpeechResultEvent) => void) | null;
+  onend: (() => void) | null;
+};
+
+type SpeechResultEvent = {
+  results: ArrayLike<{
+    0: { transcript: string };
+    isFinal: boolean;
+  }>;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
+  if (typeof window === "undefined") return null;
+  const speechWindow = window as Window &
+    typeof globalThis & {
+      SpeechRecognition?: SpeechRecognitionConstructor;
+      webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    };
+
+  return speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition || null;
+}
 
 export function VoiceSearch() {
   const [listening, setListening] = useState(false);
   const [text, setText] = useState("");
-  const recRef = useRef<SR | null>(null);
+  const recRef = useRef<SpeechRecognitionLike | null>(null);
   const navigate = useNavigate();
+  const { speechLocale, t } = useLanguage();
+  const { role } = useAuth();
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const SRC = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SRC) return;
-    const r = new SRC();
-    r.lang = "en-IN";
+    const Source = getSpeechRecognitionConstructor();
+    if (!Source) return;
+    const r = new Source();
+    r.lang = speechLocale;
     r.continuous = false;
     r.interimResults = true;
-    r.onresult = (e: any) => {
-      const t = Array.from(e.results).map((r: any) => r[0].transcript).join("");
-      setText(t);
+    r.onresult = (e) => {
+      const spoken = Array.from(e.results)
+        .map((result) => result[0].transcript)
+        .join("");
+      setText(spoken);
       if (e.results[e.results.length - 1].isFinal) {
         setListening(false);
-        navigate({ to: "/shop", search: { q: t } as any });
+        const lower = spoken.toLowerCase();
+        const isListingIntent =
+          lower.includes("listing") || lower.includes("add crop");
+        if (isListingIntent) {
+          // Route listing/add-crop commands to the correct dashboard based on role.
+          // Farmers go to their farmer dashboard; consumers go to the consumer dashboard.
+          const target = role === "farmer" ? "/farmer-dashboard" : "/dashboard";
+          navigate({ to: target as never });
+        } else {
+          navigate({ to: "/shop", search: { q: spoken } as never });
+        }
       }
     };
     r.onend = () => setListening(false);
     recRef.current = r;
-  }, [navigate]);
+  }, [navigate, role, speechLocale]);
 
   const toggle = () => {
-    if (!recRef.current) { alert("Voice search needs Chrome/Edge browser."); return; }
+    if (!recRef.current) {
+      alert(t.voiceUnsupported);
+      return;
+    }
     if (listening) recRef.current.stop();
-    else { setText(""); recRef.current.start(); setListening(true); }
+    else {
+      setText("");
+      recRef.current.lang = speechLocale;
+      recRef.current.start();
+      setListening(true);
+    }
   };
 
   return (
     <>
       <button
         onClick={toggle}
-        aria-label="Voice search"
+        aria-label={t.voiceSearch}
         className={`h-10 w-10 inline-flex items-center justify-center rounded-full transition ${listening ? "bg-harvest text-harvest-foreground animate-glow-pulse" : "hover:bg-muted"}`}
       >
         {listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
       </button>
       {listening && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full bg-card shadow-glow border border-border text-sm">
-          🎙️ Listening… <span className="text-muted-foreground">{text || "say a vegetable name"}</span>
+          {t.voiceTranscript}: <span className="text-muted-foreground">{text || t.cropName}</span>
         </div>
       )}
     </>
