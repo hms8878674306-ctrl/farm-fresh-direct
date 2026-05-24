@@ -6,6 +6,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
+import { useLanguage } from "@/lib/language-context";
 import { Handshake, Check, X, Sparkles, Send } from "lucide-react";
 import { deals } from "@/lib/deals-store";
 import { cart } from "@/lib/cart-store";
@@ -31,18 +32,6 @@ type Msg = {
   unit?: string;
   productName?: string;
   time: string;
-};
-
-const PRESET_USER = [
-  "Is this harvested today?",
-  "Can you deliver tomorrow morning?",
-  "Is it organic certified?",
-];
-
-const PRESET_FARMER: Record<string, string> = {
-  "Is this harvested today?": "Yes, picked this morning at 6am from my farm 🌅",
-  "Can you deliver tomorrow morning?": "Sure, I will pack tonight and rider will reach by 9am ✅",
-  "Is it organic certified?": "Yes, certified by APEDA. Zero pesticides 🌱",
 };
 
 function fmtTime(d: Date) { return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
@@ -100,11 +89,25 @@ function ConsumerChat({
   product: typeof products[number];
   initialQty: number;
 }) {
+  const { t } = useLanguage();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [offerPrice, setOfferPrice] = useState<number>(Math.round(product.price * 0.9));
   const [offerQty, setOfferQty] = useState<number>(initialQty);
   const [deal, setDeal] = useState<{ price: number; qty: number } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  const presetQuestions = useMemo(() => [t.presetQ1, t.presetQ2, t.presetQ3], [t]);
+  const presetAnswers = useMemo(
+    () => ({
+      [t.presetQ1]: t.presetA1,
+      [t.presetQ2]: t.presetA2,
+      [t.presetQ3]: t.presetA3,
+    }),
+    [t],
+  );
+  const productName = t[`product${product.id.toUpperCase()}`] || product.name;
+  const farmerName = t[`farmer${farmer.id.toUpperCase()}`] || farmer.name;
+  const productUnit = t[product.unit === "kg" ? "unitKg" : product.unit === "dozen" ? "unitDozen" : "unitBunch"] || product.unit;
 
   const userKey = user?.uid || (typeof window !== "undefined"
     ? (sessionStorage.getItem("krishi-anon") || (() => {
@@ -173,7 +176,7 @@ function ConsumerChat({
     if (deal) return;
     await writeMsg({ from: "me", kind: "text", text });
     setTimeout(() => {
-      const reply = PRESET_FARMER[text] || "Let me check and get back to you 🙂";
+      const reply = presetAnswers[text] || t.farmerReplyLater;
       writeMsg({ from: "farmer", kind: "text", text: reply });
     }, 700);
   };
@@ -233,10 +236,10 @@ function ConsumerChat({
         <div className="flex items-center gap-3 p-4 border-b border-border bg-secondary/40">
           <img src={farmer.photo} alt={farmer.name} className="h-12 w-12 rounded-full object-cover" />
           <div className="flex-1 min-w-0">
-            <div className="font-bold flex items-center gap-2">{farmer.name}<span className="h-2 w-2 rounded-full bg-fresh animate-pulse" /></div>
-            <div className="text-xs text-muted-foreground truncate">Negotiating: {product.name} · Listed ₹{product.price}/{product.unit}</div>
+            <div className="font-bold flex items-center gap-2">{farmerName}<span className="h-2 w-2 rounded-full bg-fresh animate-pulse" /></div>
+            <div className="text-xs text-muted-foreground truncate">{t.negotiatingLabel}: {productName} · {t.listedAt} ₹{product.price}/{productUnit}</div>
           </div>
-          {!user && <Link to="/login" className="text-xs font-semibold text-primary hover:underline">Sign in</Link>}
+          {!user && <Link to="/login" className="text-xs font-semibold text-primary hover:underline">{t.signIn}</Link>}
         </div>
 
         {/* Messages */}
@@ -247,10 +250,10 @@ function ConsumerChat({
               return (
                 <div key={m.id} className="flex justify-center">
                   <div className="max-w-md w-full rounded-2xl p-4 gradient-fresh text-primary-foreground shadow-glow">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-90"><Handshake className="h-4 w-4" /> Deal sealed</div>
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-90"><Handshake className="h-4 w-4" /> {t.dealSealed}</div>
                     <div className="display text-2xl font-extrabold mt-1">{m.productName}</div>
                     <div className="mt-1 text-sm opacity-95">₹{m.price}/{m.unit} × {m.qty} = <span className="font-bold">₹{(m.price! * m.qty!)}</span></div>
-                    <Link to="/checkout" className="inline-block mt-3 px-4 py-2 rounded-full bg-white text-primary text-sm font-bold">Proceed to checkout →</Link>
+                    <Link to="/checkout" className="inline-block mt-3 px-4 py-2 rounded-full bg-white text-primary text-sm font-bold">{t.proceedCheckout}</Link>
                   </div>
                 </div>
               );
@@ -260,13 +263,13 @@ function ConsumerChat({
                 <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 ${mine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-secondary rounded-bl-sm"}`}>
                   {(m.kind === "offer" || m.kind === "counter") && m.price ? (
                     <div>
-                      <div className="text-[10px] uppercase tracking-wider opacity-75 font-bold">{mine ? "Your offer" : "Counter offer"}</div>
+                      <div className="text-[10px] uppercase tracking-wider opacity-75 font-bold">{mine ? t.yourOffer : t.counterOfferLabel}</div>
                       <div className="text-base font-extrabold mt-0.5">₹{m.price}/{m.unit} × {m.qty}</div>
                       <p className="text-xs mt-1 opacity-90">{m.text.replace(/^My offer:.*$/, "")}</p>
                       {!mine && !deal && latestFarmerCounter?.id === m.id && (
                         <div className="flex gap-2 mt-2">
-                          <button onClick={() => acceptCounter(m.price!, m.qty!)} className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-fresh text-fresh-foreground hover:opacity-90"><Check className="h-3 w-3" /> Accept</button>
-                          <button onClick={walkAway} className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-background text-foreground border border-border hover:bg-muted"><X className="h-3 w-3" /> Walk away</button>
+                          <button onClick={() => acceptCounter(m.price!, m.qty!)} className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-fresh text-fresh-foreground hover:opacity-90"><Check className="h-3 w-3" /> {t.accept}</button>
+                          <button onClick={walkAway} className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-background text-foreground border border-border hover:bg-muted"><X className="h-3 w-3" /> {t.walkAway}</button>
                         </div>
                       )}
                     </div>
@@ -291,19 +294,19 @@ function ConsumerChat({
             <div className="rounded-xl bg-fresh/10 border border-fresh/30 p-3 flex items-center gap-3">
               <Sparkles className="h-5 w-5 text-fresh" />
               <div className="flex-1 text-sm">
-                <div className="font-bold">Negotiation closed</div>
-                <div className="text-xs text-muted-foreground">{product.name} · ₹{deal.price}/{product.unit} × {deal.qty} = <b>₹{dealTotal}</b></div>
+                <div className="font-bold">{t.negotiationClosedShort}</div>
+                <div className="text-xs text-muted-foreground">{productName} · ₹{deal.price}/{productUnit} × {deal.qty} = <b>₹{dealTotal}</b></div>
               </div>
-              <Link to="/checkout" className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold">Checkout</Link>
+              <Link to="/checkout" className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold">{t.checkoutTitle}</Link>
             </div>
           ) : (
             <>
               {/* Offer builder */}
               <div className="rounded-xl bg-secondary/40 border border-border p-3">
-                <div className="text-[11px] text-muted-foreground mb-2 font-semibold">💰 Make an offer</div>
+                <div className="text-[11px] text-muted-foreground mb-2 font-semibold">💰 {t.makeOffer}</div>
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex-1 min-w-28">
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Price /{product.unit}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{t.pricePerUnit}{productUnit}</div>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="font-bold">₹</span>
                       <input type="number" min={1} value={offerPrice} onChange={e => setOfferPrice(+e.target.value)}
@@ -311,24 +314,23 @@ function ConsumerChat({
                     </div>
                   </label>
                   <label className="flex-1 min-w-24">
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Quantity</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{t.quantity}</div>
                     <input type="number" min={1} value={offerQty} onChange={e => setOfferQty(+e.target.value)}
                       className="mt-1 w-full h-9 px-2 rounded-lg bg-background border border-border focus:border-primary focus:outline-none text-sm font-bold" />
                   </label>
                   <button onClick={sendOffer} className="h-9 px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold hover:bg-primary-glow inline-flex items-center gap-1.5">
-                    <Handshake className="h-3.5 w-3.5" /> Send offer
+                    <Handshake className="h-3.5 w-3.5" /> {t.sendOffer}
                   </button>
                 </div>
                 <div className="text-[10px] text-muted-foreground mt-2">
-                  Total: <b>₹{offerPrice * offerQty}</b> · vs listed <span className="line-through">₹{product.price * offerQty}</span>
+                  {t.offerTotalVsListed.replace("{total}", String(offerPrice * offerQty)).replace("{listed}", String(product.price * offerQty))}
                 </div>
               </div>
 
-              {/* Quick questions */}
               <div>
-                <div className="text-[11px] text-muted-foreground mb-2 px-1">💬 Quick questions</div>
+                <div className="text-[11px] text-muted-foreground mb-2 px-1">💬 {t.quickQuestions}</div>
                 <div className="flex gap-2 overflow-x-auto">
-                  {PRESET_USER.map(p => (
+                  {presetQuestions.map(p => (
                     <button key={p} onClick={() => sendText(p)}
                       className="flex-shrink-0 px-3 py-2 text-xs rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground border border-border font-semibold transition">
                       {p}
@@ -360,6 +362,7 @@ function FarmerChat({
   farmer: ReturnType<typeof farmerById>;
   fallbackProduct: typeof products[number];
 }) {
+  const { t } = useLanguage();
   const [convos, setConvos] = useState<ChatSummary[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -493,18 +496,18 @@ function FarmerChat({
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 md:px-8">
       <div className="mb-6">
-        <h1 className="display text-4xl font-extrabold">Farmer Negotiation Inbox</h1>
+        <h1 className="display text-4xl font-extrabold">{t.farmerInboxTitle}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Review buyer offers for {farmer.name}, send counters, and close deals from the farmer side.
+          {t.farmerInboxCopy}
         </p>
       </div>
 
       <div className="grid min-h-[calc(100vh-230px)] gap-4 lg:grid-cols-[320px_1fr]">
         <aside className="rounded-3xl border border-border bg-card p-3 shadow-card">
-          <div className="px-2 pb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">Buyer chats</div>
+          <div className="px-2 pb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">{t.buyerChats}</div>
           {convos.length === 0 ? (
             <div className="rounded-2xl bg-secondary/50 p-4 text-sm text-muted-foreground">
-              No buyer negotiations yet. When consumers start a chat, it will appear here.
+              {t.noBuyerChats}
             </div>
           ) : (
             <div className="space-y-2">
@@ -518,9 +521,9 @@ function FarmerChat({
                     onClick={() => setSelectedId(c.id)}
                     className={`w-full rounded-2xl border p-3 text-left transition ${active ? "border-primary bg-primary/10" : "border-border hover:bg-secondary/50"}`}
                   >
-                    <div className="text-sm font-bold">Buyer #{index + 1}</div>
+                    <div className="text-sm font-bold">{t.buyerNumber} #{index + 1}</div>
                     <div className="mt-1 text-xs text-muted-foreground">{item.name}</div>
-                    <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">Conversation active</div>
+                    <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">{t.conversationActive}</div>
                   </button>
                 );
               })}
@@ -532,18 +535,18 @@ function FarmerChat({
           <div className="flex items-center gap-3 border-b border-border bg-secondary/40 p-4">
             <img src={farmer.photo} alt={farmer.name} className="h-12 w-12 rounded-full object-cover" />
             <div className="min-w-0 flex-1">
-              <div className="font-bold">{selectedConvo ? `Negotiating ${product.name}` : "Select a buyer chat"}</div>
-              <div className="truncate text-xs text-muted-foreground">Listed ₹{product.price}/{product.unit}</div>
+              <div className="font-bold">{selectedConvo ? `${t.negotiatingProduct} ${product.name}` : t.selectBuyerChat}</div>
+              <div className="truncate text-xs text-muted-foreground">{t.listedAt} ₹{product.price}/{product.unit}</div>
             </div>
             {closedDeal && (
-              <span className="rounded-full bg-fresh px-3 py-1 text-xs font-bold text-fresh-foreground">Deal closed</span>
+              <span className="rounded-full bg-fresh px-3 py-1 text-xs font-bold text-fresh-foreground">{t.dealClosed}</span>
             )}
           </div>
 
           <div className="flex-1 space-y-3 overflow-y-auto bg-background p-4">
             {msgs.length === 0 ? (
               <div className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
-                Select a buyer conversation to start replying.
+                {t.selectConversation}
               </div>
             ) : msgs.map((m) => {
               const mine = m.from === "farmer";
@@ -552,7 +555,7 @@ function FarmerChat({
                 return (
                   <div key={m.id} className="flex justify-center">
                     <div className="w-full max-w-md rounded-2xl p-4 gradient-fresh text-primary-foreground shadow-glow">
-                      <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-90"><Handshake className="h-4 w-4" /> Deal sealed</div>
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-90"><Handshake className="h-4 w-4" /> {t.dealSealed}</div>
                       <div className="display mt-1 text-2xl font-extrabold">{m.productName}</div>
                       <div className="mt-1 text-sm opacity-95">₹{m.price}/{m.unit} × {m.qty} = <span className="font-bold">₹{(m.price! * m.qty!)}</span></div>
                     </div>
@@ -565,7 +568,7 @@ function FarmerChat({
                   <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 ${mine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-secondary rounded-bl-sm"}`}>
                     {(m.kind === "offer" || m.kind === "counter") && m.price ? (
                       <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider opacity-75">{mine ? "Your counter" : "Buyer offer"}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider opacity-75">{mine ? t.yourCounter : t.buyerOffer}</div>
                         <div className="mt-0.5 text-base font-extrabold">₹{m.price}/{m.unit} × {m.qty}</div>
                         <p className="mt-1 text-xs opacity-90">{m.text}</p>
                       </div>
@@ -586,34 +589,34 @@ function FarmerChat({
 
           <div className="space-y-3 border-t border-border bg-card p-3">
             {!selectedConvo ? (
-              <div className="rounded-xl bg-secondary/50 p-3 text-sm text-muted-foreground">Choose a buyer chat from the inbox.</div>
+              <div className="rounded-xl bg-secondary/50 p-3 text-sm text-muted-foreground">{t.chooseBuyerChat}</div>
             ) : closedDeal ? (
               <div className="rounded-xl border border-fresh/30 bg-fresh/10 p-3 text-sm">
-                Negotiation is closed for this buyer.
+                {t.negotiationClosed}
               </div>
             ) : (
               <>
                 <div className="rounded-xl border border-border bg-secondary/40 p-3">
-                  <div className="mb-2 text-[11px] font-semibold text-muted-foreground">Respond to latest buyer offer</div>
+                  <div className="mb-2 text-[11px] font-semibold text-muted-foreground">{t.respondToOffer}</div>
                   <div className="flex flex-wrap items-end gap-3">
                     <label className="min-w-28 flex-1">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Price /{product.unit}</div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.pricePerUnit}{product.unit}</div>
                       <input type="number" min={1} value={counterPrice} onChange={e => setCounterPrice(+e.target.value)}
                         className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm font-bold focus:border-primary focus:outline-none" />
                     </label>
                     <label className="min-w-24 flex-1">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Quantity</div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.quantity}</div>
                       <input type="number" min={1} value={counterQty} onChange={e => setCounterQty(+e.target.value)}
                         className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm font-bold focus:border-primary focus:outline-none" />
                     </label>
                     <button onClick={sendCounter} className="h-9 rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary-glow">
-                      Send counter
+                      {t.sendCounter}
                     </button>
                     <button onClick={acceptBuyerOffer} disabled={!latestBuyerOffer} className="h-9 rounded-full bg-fresh px-4 text-xs font-bold text-fresh-foreground disabled:opacity-50">
-                      Accept buyer
+                      {t.acceptBuyer}
                     </button>
                     <button onClick={rejectBuyerOffer} className="h-9 rounded-full border border-border px-4 text-xs font-bold hover:bg-muted">
-                      Reject
+                      {t.reject}
                     </button>
                   </div>
                 </div>
@@ -623,11 +626,11 @@ function FarmerChat({
                     value={reply}
                     onChange={e => setReply(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter") sendReply(); }}
-                    placeholder="Reply as farmer..."
+                    placeholder={t.replyAsFarmer}
                     className="h-11 flex-1 rounded-xl border border-border bg-background px-4 text-sm focus:border-primary focus:outline-none"
                   />
                   <button onClick={sendReply} className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">
-                    <Send className="h-4 w-4" /> Send
+                    <Send className="h-4 w-4" /> {t.send}
                   </button>
                 </div>
               </>
