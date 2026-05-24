@@ -1,6 +1,17 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { en, type Dictionary } from "@/lib/i18n/en";
-import { getSpeechLocale, isSupportedLanguage, type LanguageCode } from "@/lib/i18n/languages";
+import {
+  getSpeechLocale,
+  isSupportedLanguage,
+  LANGUAGES,
+  languageOptionLabel,
+  type LanguageCode,
+} from "@/lib/i18n/languages";
+import {
+  applyGoogleTranslateAndReload,
+  googTransMatchesLanguage,
+  loadGoogleTranslateScript,
+} from "@/lib/i18n/google-translate";
 import {
   getCachedDictionary,
   prefetchLanguages,
@@ -8,6 +19,7 @@ import {
 } from "@/lib/i18n/translate-service";
 
 export type Language = LanguageCode;
+export { LANGUAGES, languageOptionLabel };
 
 type LanguageContextValue = {
   language: LanguageCode;
@@ -57,20 +69,36 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    void loadGoogleTranslateScript();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const saved = localStorage.getItem("krishi-language");
-    const initial = isSupportedLanguage(saved) ? saved : "en";
+    const initial: LanguageCode = isSupportedLanguage(saved) ? saved : "en";
     setLanguageState(initial);
     applyLanguage(initial, setDictionary, setTranslating);
     prefetchLanguages(["hi", "mr", "bn", "ta", "te", "gu", "kn", "ml"]);
+
+    if (!googTransMatchesLanguage(initial) && !sessionStorage.getItem("krishi-googtrans-sync")) {
+      sessionStorage.setItem("krishi-googtrans-sync", "1");
+      applyGoogleTranslateAndReload(initial);
+    }
   }, []);
 
   const setLanguage = (nextLanguage: LanguageCode) => {
-    if (!isSupportedLanguage(nextLanguage)) return;
+    if (!isSupportedLanguage(nextLanguage) || nextLanguage === language) return;
+
     setLanguageState(nextLanguage);
     if (typeof window !== "undefined") {
       localStorage.setItem("krishi-language", nextLanguage);
     }
     applyLanguage(nextLanguage, setDictionary, setTranslating);
+
+    if (typeof window !== "undefined" && !googTransMatchesLanguage(nextLanguage)) {
+      applyGoogleTranslateAndReload(nextLanguage);
+    }
   };
 
   const value = useMemo(

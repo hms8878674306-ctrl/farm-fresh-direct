@@ -42,7 +42,7 @@ function normalize(text: string) {
 function matchCommand(spoken: string, isFarmer: boolean): NavTarget | null {
   const s = normalize(spoken);
 
-  const rules: Array<{ words: string[]; target: NavTarget }> = [
+  const rules: Array<{ words: string[]; target: NavTarget; farmerOnly?: boolean }> = [
     { words: ["home", "मुख्य", "होम", "मुख्यपृष्ठ", "ಮುಖಪುಟ"], target: { to: "/" } },
     { words: ["shop", "buy", "market", "बाजार", "खरीद", "दुकान"], target: { to: "/shop", search: { q: "" } } },
     { words: ["track", "order", "delivery", "ऑर्डर", "ट्रैक", "डिलीवरी"], target: { to: "/track" } },
@@ -56,11 +56,13 @@ function matchCommand(spoken: string, isFarmer: boolean): NavTarget | null {
     },
     {
       words: ["listing", "listings", "add crop", "लिस्टिंग", "यादी"],
+      farmerOnly: true,
       target: { to: "/farmer-dashboard", search: { section: "listings", add: true } },
     },
   ];
 
   for (const rule of rules) {
+    if (rule.farmerOnly && !isFarmer) continue;
     if (rule.words.some((w) => s.includes(normalize(w)))) return rule.target;
   }
 

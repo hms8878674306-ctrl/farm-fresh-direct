@@ -5,8 +5,7 @@ import { useState, useEffect } from "react";
 import { CartDrawer } from "./CartDrawer";
 import { VoiceNavigator } from "./VoiceNavigator";
 import { useAuth } from "@/lib/auth-context";
-import { INDIAN_LANGUAGES } from "@/lib/i18n/languages";
-import { useLanguage, type Language } from "@/lib/language-context";
+import { LANGUAGES, languageOptionLabel, useLanguage, type Language } from "@/lib/language-context";
 
 export function Header() {
   const s = useCart();
@@ -68,12 +67,12 @@ export function Header() {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as Language)}
-                className="max-w-[7.5rem] bg-transparent text-xs font-semibold outline-none"
+                className="max-w-[9.5rem] bg-transparent text-xs font-semibold outline-none"
                 aria-label={t.language}
               >
-                {INDIAN_LANGUAGES.map((lang) => (
+                {LANGUAGES.map((lang) => (
                   <option key={lang.code} value={lang.code}>
-                    {lang.nativeLabel}
+                    {languageOptionLabel(lang)}
                   </option>
                 ))}
               </select>

@@ -95,6 +95,7 @@ function RootComponent() {
     <AuthProvider>
       <LanguageProvider>
         <AuthGate>
+          <div id="google_translate_element" className="sr-only" aria-hidden="true" />
           <SploshSlogan />
           <Header />
           <WelcomeOverlay />
