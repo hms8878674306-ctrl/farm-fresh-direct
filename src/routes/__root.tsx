@@ -5,6 +5,7 @@ import { SploshSlogan } from "@/components/SploshSlogan";
 import { AuthProvider } from "@/lib/auth-context";
 import { AuthGate } from "@/components/AuthGate";
 import { useEffect } from "react";
+import { hideLovableBadge } from "@/lib/hide-lovable-badge";
 import { seedIfEmpty } from "@/lib/seed";
 import { LanguageProvider } from "@/lib/language-context";
 import { useLanguage } from "@/lib/language-context";
@@ -90,6 +91,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   useEffect(() => {
     seedIfEmpty();
+    return hideLovableBadge();
   }, []);
   return (
     <AuthProvider>
