@@ -4,6 +4,7 @@ import { Phone, MessageCircle, MapPin, Package, Check, Truck, Sprout, Home, Pack
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, updateDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
 import { useLanguage } from "@/lib/language-context";
+import { useLiveGps } from "@/hooks/use-live-gps";
 import type { LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/track")({
@@ -83,7 +84,15 @@ function Track() {
   }, [order?.stage, STAGES.length]);
 
   const stage = order?.stage ?? 0;
+  const delivered = stage >= STAGES.length - 1;
   const stageProgress = useMemo(() => ((stage + 1) / STAGES.length) * 100, [stage, STAGES.length]);
+  const gps = useLiveGps(eta, delivered);
+  const liveKm =
+    gps.gpsActive && gps.distanceKm != null
+      ? gps.distanceKm
+      : delivered
+        ? 0
+        : (eta / 60) * 0.15;
 
   const advance = async () => {
     if (!order) return;
@@ -114,7 +123,6 @@ function Track() {
   }
 
   const rider = order.rider || { name: "Suresh Kumar", rating: 4.9, phone: "+91 98765 43210" };
-  const delivered = stage >= STAGES.length - 1;
 
   return (
     <main className="mx-auto max-w-3xl px-4 md:px-8 py-10">
@@ -124,7 +132,7 @@ function Track() {
           <p className="text-muted-foreground mt-1">{t.trackOrderLabel} #{order.id.slice(0, 8).toUpperCase()} · ₹{order.total}</p>
         </div>
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fresh/15 text-fresh text-xs font-bold">
-          <span className="h-2 w-2 rounded-full bg-fresh animate-pulse" /> {t.live}
+          <span className="h-2 w-2 rounded-full bg-fresh animate-pulse" /> {gps.gpsActive ? t.gpsLive : t.live}
         </span>
       </div>
 
@@ -142,8 +150,19 @@ function Track() {
             <div className="text-xs uppercase tracking-widest opacity-80">{delivered ? t.deliveredStatus : t.arrivingIn}</div>
             <div className="display text-5xl font-extrabold">{delivered ? "✓" : fmtClock(eta)}</div>
           </div>
-          <div className="absolute bottom-4 right-4 text-primary-foreground/90 text-xs flex items-center gap-1">
-            <MapPin className="h-3.5 w-3.5" /> {delivered ? t.atYourDoor : `${(eta / 60 * 0.15).toFixed(1)} ${t.kmAway}`}
+          <div className="absolute bottom-4 right-4 text-primary-foreground/90 text-xs flex flex-col items-end gap-1">
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5" />{" "}
+              {delivered ? t.atYourDoor : `${liveKm.toFixed(1)} ${t.kmAway}`}
+            </span>
+            {gps.gpsActive && gps.user && gps.rider && (
+              <span className="text-[10px] opacity-80">
+                {t.gpsRiderLocation}: {gps.rider.lat.toFixed(4)}, {gps.rider.lng.toFixed(4)}
+              </span>
+            )}
+            {gps.error && !delivered && (
+              <span className="text-[10px] opacity-80">{t.gpsEnableHint}</span>
+            )}
           </div>
         </div>
 

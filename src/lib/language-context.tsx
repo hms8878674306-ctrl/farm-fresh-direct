@@ -1,7 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { en, type Dictionary } from "@/lib/i18n/en";
 import { getSpeechLocale, isSupportedLanguage, type LanguageCode } from "@/lib/i18n/languages";
-import { resolveDictionary } from "@/lib/i18n/translate-service";
+import {
+  getCachedDictionary,
+  prefetchLanguages,
+  resolveDictionary,
+} from "@/lib/i18n/translate-service";
 
 export type Language = LanguageCode;
 
@@ -21,6 +25,31 @@ const LanguageCtx = createContext<LanguageContextValue>({
   translating: false,
 });
 
+function applyLanguage(
+  lang: LanguageCode,
+  setDictionary: (d: Dictionary) => void,
+  setTranslating: (v: boolean) => void,
+) {
+  if (lang === "en") {
+    setDictionary(en);
+    setTranslating(false);
+    return;
+  }
+
+  const cached = getCachedDictionary(lang);
+  if (cached) {
+    setDictionary(cached);
+    setTranslating(false);
+    return;
+  }
+
+  setTranslating(true);
+  void resolveDictionary(lang, en).then((next) => {
+    setDictionary(next);
+    setTranslating(false);
+  });
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<LanguageCode>("en");
   const [dictionary, setDictionary] = useState<Dictionary>(en);
@@ -29,35 +58,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem("krishi-language");
-    if (isSupportedLanguage(saved)) setLanguageState(saved);
+    const initial = isSupportedLanguage(saved) ? saved : "en";
+    setLanguageState(initial);
+    applyLanguage(initial, setDictionary, setTranslating);
+    prefetchLanguages(["hi", "mr", "bn", "ta", "te", "gu", "kn", "ml"]);
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (language === "en") {
-      setDictionary(en);
-      setTranslating(false);
-      return;
-    }
-
-  const load = async () => {
-      setTranslating(true);
-      try {
-        const next = await resolveDictionary(language, en);
-        if (!cancelled) setDictionary(next);
-      } catch {
-        if (!cancelled) setDictionary(en);
-      } finally {
-        if (!cancelled) setTranslating(false);
-      }
-    };
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [language]);
 
   const setLanguage = (nextLanguage: LanguageCode) => {
     if (!isSupportedLanguage(nextLanguage)) return;
@@ -65,6 +70,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") {
       localStorage.setItem("krishi-language", nextLanguage);
     }
+    applyLanguage(nextLanguage, setDictionary, setTranslating);
   };
 
   const value = useMemo(

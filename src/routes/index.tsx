@@ -4,7 +4,6 @@ import { products, farmers, seasonalTheme } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
 import { PriceTicker } from "@/components/PriceTicker";
 import { FarmerVoiceListing } from "@/components/FarmerVoiceListing";
-import { PlatformFeatures } from "@/components/PlatformFeatures";
 import {
   AlertTriangle,
   BarChart3,
@@ -155,8 +154,6 @@ function Index() {
           </div>
         ))}
       </section>
-
-      <PlatformFeatures />
 
       {/* AI RECOMMENDATIONS */}
       <section className="mx-auto max-w-7xl px-4 md:px-8 py-10">
@@ -543,7 +540,6 @@ function FarmerHome() {
         ))}
       </section>
 
-      <PlatformFeatures />
     </main>
   );
 }
