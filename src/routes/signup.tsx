@@ -21,6 +21,8 @@ import {
 } from "@/lib/firebase";
 
 import { Leaf } from "lucide-react";
+import { LanguageSelect } from "@/components/LanguageSelect";
+import { PriceTicker } from "@/components/PriceTicker";
 import { useAuth, type Role } from "@/lib/auth-context";
 import { setWelcomeIntent } from "@/lib/welcome";
 import { useLanguage } from "@/lib/language-context";
@@ -166,7 +168,12 @@ function Signup() {
   };
 
   return (
-    <main className="mx-auto max-w-md px-4 py-16">
+    <div className="relative">
+      <div className="absolute top-4 right-4 z-20 md:top-6 md:right-8">
+        <LanguageSelect />
+      </div>
+      <PriceTicker />
+      <main className="mx-auto max-w-md px-4 py-16">
       <div className="text-center mb-8">
         <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl gradient-fresh shadow-glow mb-3">
           <Leaf className="h-7 w-7 text-primary-foreground" />
@@ -257,5 +264,6 @@ function Signup() {
         </p>
       </form>
     </main>
+    </div>
   );
 }

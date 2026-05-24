@@ -1,11 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ClipboardList, Languages, LayoutDashboard, Leaf, LogIn, LogOut, MessageCircle, PackageSearch, ShoppingCart, Store } from "lucide-react";
+import { ClipboardList, LayoutDashboard, Leaf, LogIn, LogOut, MessageCircle, PackageSearch, ShoppingCart, Store } from "lucide-react";
 import { useCart, cartCount } from "@/lib/cart-store";
 import { useState, useEffect } from "react";
 import { CartDrawer } from "./CartDrawer";
 import { VoiceNavigator } from "./VoiceNavigator";
 import { useAuth } from "@/lib/auth-context";
-import { LANGUAGES, languageOptionLabel, useLanguage, type Language } from "@/lib/language-context";
+import { LanguageSelect } from "@/components/LanguageSelect";
+import { useLanguage } from "@/lib/language-context";
 
 export function Header() {
   const s = useCart();
@@ -14,7 +15,7 @@ export function Header() {
   const [bumped, setBumped] = useState(false);
   const loc = useLocation();
   const { user, role, signOut } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   const isFarmer = role === "farmer";
 
   useEffect(() => { if (count > 0) { setBumped(true); const t = setTimeout(() => setBumped(false), 400); return () => clearTimeout(t); } }, [count]);
@@ -61,22 +62,7 @@ export function Header() {
               {isFarmer ? <Store className="h-4 w-4 text-primary" /> : <ShoppingCart className="h-4 w-4 text-primary" />}
               {isFarmer ? t.farmerMode : t.consumerMode}
             </div>
-            <label className="inline-flex h-10 items-center gap-1 rounded-full border border-border bg-card px-2 text-sm">
-              <Languages className="h-4 w-4 text-muted-foreground" />
-              <span className="sr-only">{t.language}</span>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as Language)}
-                className="max-w-[9.5rem] bg-transparent text-xs font-semibold outline-none"
-                aria-label={t.language}
-              >
-                {LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {languageOptionLabel(lang)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <LanguageSelect />
             <Link to="/chat" search={{ farmerId: "f1" }} className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted transition" aria-label={t.chat}>
               <MessageCircle className="h-5 w-5" />
             </Link>
