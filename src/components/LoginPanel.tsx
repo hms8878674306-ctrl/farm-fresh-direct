@@ -7,7 +7,9 @@ import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { useAuth, type Role } from "@/lib/auth-context";
 import { setWelcomeIntent } from "@/lib/welcome";
+import { LanguageSelect } from "@/components/LanguageSelect";
 import { useLanguage } from "@/lib/language-context";
+import { PriceTicker } from "@/components/PriceTicker";
 
 export default function LoginPanel() {
   const { role, setRole } = useAuth();
@@ -107,7 +109,12 @@ export default function LoginPanel() {
   );
 
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-background">
+      <div className="absolute top-4 right-4 z-20 md:top-6 md:right-6">
+        <LanguageSelect />
+      </div>
+      <PriceTicker />
+      <main className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
           <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl gradient-fresh shadow-glow mb-3">
@@ -159,6 +166,7 @@ export default function LoginPanel() {
           </button>
         </div>
       </div>
-    </main>
+      </main>
+    </div>
   );
 }

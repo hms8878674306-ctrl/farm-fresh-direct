@@ -411,6 +411,8 @@ function FarmerHome() {
         </div>
       </section>
 
+      <PriceTicker />
+
       <section className="mx-auto grid max-w-7xl gap-4 px-4 py-8 md:grid-cols-4 md:px-8">
         {[
           { Icon: PackagePlus, label: t.activeListings, value: String(farmProducts.length) },

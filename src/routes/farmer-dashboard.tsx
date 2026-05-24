@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { FarmerVoiceListing } from "@/components/FarmerVoiceListing";
 import { PricePredictionPanel } from "@/components/PricePredictionPanel";
+import { PriceTicker } from "@/components/PriceTicker";
 
 import { TrendingUp, Package, Heart, Plus, IndianRupee } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -126,7 +127,9 @@ function FarmerDashboard() {
   const bars = [40, 65, 50, 80, 70, 95, 88];
 
   return (
-    <main className="mx-auto max-w-7xl px-4 md:px-8 py-10">
+    <>
+      <PriceTicker />
+      <main className="mx-auto max-w-7xl px-4 md:px-8 py-10">
       <div className="mb-8">
         <h1 className="display text-4xl font-extrabold">{t.farmerDashboardTitle}</h1>
 
@@ -253,6 +256,7 @@ function FarmerDashboard() {
         </div>
       </section>
     </main>
+    </>
   );
 }
 
