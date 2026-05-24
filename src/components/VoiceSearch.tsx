@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useLanguage } from "@/lib/language-context";
+import { useAuth } from "@/lib/auth-context";
 
 type SpeechRecognitionLike = {
   lang: string;
@@ -39,6 +40,7 @@ export function VoiceSearch() {
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const navigate = useNavigate();
   const { speechLocale, t } = useLanguage();
+  const { role } = useAuth();
 
   useEffect(() => {
     const Source = getSpeechRecognitionConstructor();
@@ -54,12 +56,22 @@ export function VoiceSearch() {
       setText(spoken);
       if (e.results[e.results.length - 1].isFinal) {
         setListening(false);
-        navigate({ to: "/shop", search: { q: spoken } as never });
+        const lower = spoken.toLowerCase();
+        const isListingIntent =
+          lower.includes("listing") || lower.includes("add crop");
+        if (isListingIntent) {
+          // Route listing/add-crop commands to the correct dashboard based on role.
+          // Farmers go to their farmer dashboard; consumers go to the consumer dashboard.
+          const target = role === "farmer" ? "/farmer-dashboard" : "/dashboard";
+          navigate({ to: target as never });
+        } else {
+          navigate({ to: "/shop", search: { q: spoken } as never });
+        }
       }
     };
     r.onend = () => setListening(false);
     recRef.current = r;
-  }, [navigate, speechLocale]);
+  }, [navigate, role, speechLocale]);
 
   const toggle = () => {
     if (!recRef.current) {
