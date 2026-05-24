@@ -3,10 +3,9 @@ import { ClipboardList, Languages, LayoutDashboard, Leaf, LogIn, LogOut, Message
 import { useCart, cartCount } from "@/lib/cart-store";
 import { useState, useEffect } from "react";
 import { CartDrawer } from "./CartDrawer";
-import { VoiceSearch } from "./VoiceSearch";
+import { VoiceNavigator } from "./VoiceNavigator";
 import { useAuth } from "@/lib/auth-context";
-import { INDIAN_LANGUAGES } from "@/lib/i18n/languages";
-import { useLanguage, type Language } from "@/lib/language-context";
+import { LANGUAGES, languageOptionLabel, useLanguage, type Language } from "@/lib/language-context";
 
 export function Header() {
   const s = useCart();
@@ -57,7 +56,7 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {!isFarmer && <VoiceSearch />}
+            <VoiceNavigator />
             <div className="hidden lg:inline-flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-xs font-semibold text-muted-foreground">
               {isFarmer ? <Store className="h-4 w-4 text-primary" /> : <ShoppingCart className="h-4 w-4 text-primary" />}
               {isFarmer ? t.farmerMode : t.consumerMode}
@@ -68,12 +67,12 @@ export function Header() {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as Language)}
-                className="max-w-[7.5rem] bg-transparent text-xs font-semibold outline-none"
+                className="max-w-[9.5rem] bg-transparent text-xs font-semibold outline-none"
                 aria-label={t.language}
               >
-                {INDIAN_LANGUAGES.map((lang) => (
+                {LANGUAGES.map((lang) => (
                   <option key={lang.code} value={lang.code}>
-                    {lang.nativeLabel}
+                    {languageOptionLabel(lang)}
                   </option>
                 ))}
               </select>

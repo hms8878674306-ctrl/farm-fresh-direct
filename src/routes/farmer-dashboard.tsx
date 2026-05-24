@@ -15,6 +15,7 @@ import { products as sampleProducts } from "@/lib/data";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { FarmerVoiceListing } from "@/components/FarmerVoiceListing";
+import { PricePredictionPanel } from "@/components/PricePredictionPanel";
 
 import { TrendingUp, Package, Heart, Plus, IndianRupee } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -131,6 +132,10 @@ function FarmerDashboard() {
 
         <p className="text-muted-foreground mt-2">{t.farmerDashboardCopy}</p>
         <p className="mt-2 text-sm font-bold text-primary">{t.tollFree}</p>
+      </div>
+
+      <div className="mb-6">
+        <PricePredictionPanel />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

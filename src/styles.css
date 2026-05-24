@@ -173,3 +173,36 @@
 
 .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
 .hover-lift:hover { transform: translateY(-6px); box-shadow: var(--shadow-glow); }
+
+/* Google Translate — hide legacy UI and prevent layout shift */
+.skiptranslate,
+#google_translate_element,
+.goog-te-banner-frame,
+.goog-te-balloon-frame,
+#goog-gt-tt,
+.goog-te-menu-value,
+.goog-te-gadget,
+.goog-te-spinner-pos,
+.goog-logo-link,
+.goog-te-gadget-simple {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+iframe.goog-te-banner-frame,
+iframe.skiptranslate {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+body {
+  top: 0 !important;
+  position: static !important;
+}
+
+body.translated-ltr,
+body.translated-rtl {
+  top: 0 !important;
+}
