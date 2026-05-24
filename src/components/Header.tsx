@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { CartDrawer } from "./CartDrawer";
 import { VoiceSearch } from "./VoiceSearch";
 import { useAuth } from "@/lib/auth-context";
+import { INDIAN_LANGUAGES } from "@/lib/i18n/languages";
 import { useLanguage, type Language } from "@/lib/language-context";
 
 export function Header() {
@@ -67,12 +68,14 @@ export function Header() {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as Language)}
-                className="bg-transparent text-xs font-semibold outline-none"
+                className="max-w-[7.5rem] bg-transparent text-xs font-semibold outline-none"
                 aria-label={t.language}
               >
-                <option value="en">EN</option>
-                <option value="hi">HI</option>
-                <option value="mr">MR</option>
+                {INDIAN_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.nativeLabel}
+                  </option>
+                ))}
               </select>
             </label>
             <Link to="/chat" search={{ farmerId: "f1" }} className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted transition" aria-label={t.chat}>
