@@ -12,10 +12,11 @@ import { deals } from "@/lib/deals-store";
 import { cart } from "@/lib/cart-store";
 
 export const Route = createFileRoute("/chat")({
-  validateSearch: (s: Record<string, unknown>): { farmerId?: string; productId?: string; qty?: number } => ({
+  validateSearch: (s: Record<string, unknown>): { farmerId?: string; productId?: string; qty?: number; mode?: string } => ({
     farmerId: (s.farmerId as string) || "f1",
     productId: (s.productId as string) || undefined,
     qty: Number(s.qty) || undefined,
+    mode: (s.mode as string) || "negotiation",
   }),
   head: () => ({ meta: [{ title: "Negotiate with Farmer — KrishiDirect" }] }),
   component: Chat,
@@ -60,7 +61,7 @@ function farmerDecide(basePrice: number, offerPrice: number, qty: number) {
 }
 
 function Chat() {
-  const { farmerId, productId, qty } = Route.useSearch();
+  const { farmerId, productId, qty, mode } = Route.useSearch();
   const { user, role } = useAuth();
   const farmer = farmerById(farmerId || "f1") || farmers[0];
 
@@ -72,8 +73,93 @@ function Chat() {
   if (role === "farmer") {
     return <FarmerChat farmerId={farmer.id} farmer={farmer} fallbackProduct={product} />;
   }
+  if (mode === "delivery") {
+    return <DeliveryChat farmer={farmer} />;
+  }
 
   return <ConsumerChat farmerId={farmer.id} user={user} farmer={farmer} product={product} initialQty={qty || 5} />;
+}
+
+function DeliveryChat({ farmer }: { farmer: ReturnType<typeof farmerById> }) {
+  const { t } = useLanguage();
+  const [msgs, setMsgs] = useState<Msg[]>([
+    {
+      id: "delivery-welcome",
+      from: "farmer",
+      kind: "text",
+      text: "Hi, this is your delivery partner. Choose a quick question below.",
+      time: fmtTime(new Date()),
+    },
+  ]);
+  const endRef = useRef<HTMLDivElement>(null);
+  const qa = useMemo(
+    () => [
+      { q: "Where are you now?", a: "I am on the way and about 10-15 minutes away." },
+      { q: "Can you call me at gate?", a: "Yes, I will call you when I reach your gate." },
+      { q: "Please deliver fast", a: "Sure, I am prioritizing your order now." },
+      { q: "Can you leave at door?", a: "Yes, I can leave it at your door if you confirm." },
+    ],
+    [],
+  );
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs]);
+
+  const ask = (q: string, a: string) => {
+    const now = new Date();
+    const replyAt = new Date(now.getTime() + 700);
+    setMsgs((prev) => [
+      ...prev,
+      { id: `q-${now.getTime()}`, from: "me", kind: "text", text: q, time: fmtTime(now) },
+      { id: `a-${replyAt.getTime()}`, from: "farmer", kind: "text", text: a, time: fmtTime(replyAt) },
+    ]);
+  };
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-6">
+      <div className="flex h-[calc(100vh-180px)] min-h-[520px] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-card">
+        <div className="flex items-center gap-3 border-b border-border bg-secondary/40 p-4">
+          <img src={farmer.photo} alt={farmer.name} className="h-12 w-12 rounded-full object-cover" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 font-bold">
+              {t.yourDeliveryPartner}
+              <span className="h-2 w-2 rounded-full bg-fresh animate-pulse" />
+            </div>
+            <div className="truncate text-xs text-muted-foreground">Suresh Kumar · +91 98765 43210</div>
+          </div>
+        </div>
+        <div className="flex-1 space-y-3 overflow-y-auto bg-background p-4">
+          {msgs.map((m) => {
+            const mine = m.from === "me";
+            return (
+              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${mine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-secondary rounded-bl-sm"}`}>
+                  <p className="text-sm">{m.text}</p>
+                  <div className={`mt-1 text-[10px] ${mine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{m.time}</div>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={endRef} />
+        </div>
+        <div className="space-y-2 border-t border-border bg-card p-3">
+          <div className="text-[11px] text-muted-foreground">{t.quickQuestions}</div>
+          <div className="flex gap-2 overflow-x-auto">
+            {qa.map((item) => (
+              <button
+                key={item.q}
+                onClick={() => ask(item.q, item.a)}
+                className="flex-shrink-0 rounded-full border border-border bg-secondary px-3 py-2 text-xs font-semibold transition hover:bg-primary hover:text-primary-foreground"
+              >
+                {item.q}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }
 
 function ConsumerChat({

@@ -177,7 +177,7 @@ function Track() {
             <div className="text-xs text-muted-foreground">{t.yourDeliveryPartner} · ⭐ {rider.rating}</div>
           </div>
           <a href={`tel:${rider.phone}`} aria-label="Call rider" className="h-11 w-11 rounded-full bg-fresh text-fresh-foreground inline-flex items-center justify-center hover:opacity-90"><Phone className="h-5 w-5" /></a>
-          <Link to="/chat" search={{ farmerId: "f1" }} aria-label={t.chat} className="h-11 w-11 rounded-full bg-secondary inline-flex items-center justify-center hover:bg-muted"><MessageCircle className="h-5 w-5" /></Link>
+          <Link to="/chat" search={{ farmerId: "f1", mode: "delivery" }} aria-label={t.chat} className="h-11 w-11 rounded-full bg-secondary inline-flex items-center justify-center hover:bg-muted"><MessageCircle className="h-5 w-5" /></Link>
         </div>
       </section>
 
