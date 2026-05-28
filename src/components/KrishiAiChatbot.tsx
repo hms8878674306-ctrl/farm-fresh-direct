@@ -6,19 +6,14 @@ import {
   Send,
   Volume2,
   VolumeX,
-  Settings,
   X,
   Bot,
-  ArrowLeft,
-  Check,
-  Trash2,
-  Key,
-  Info,
   ChevronDown,
+  Languages,
 } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
-import { askGemini, getGeminiApiKey, saveGeminiApiKey, removeGeminiApiKey } from "@/lib/gemini";
-import { getRegionalLanguage } from "@/lib/i18n/languages";
+import { askGemini } from "@/lib/gemini";
+import { getRegionalLanguage, INDIAN_LANGUAGES } from "@/lib/i18n/languages";
 
 type ChatMsg = {
   id: string;
@@ -47,16 +42,13 @@ const GREETINGS: Record<string, string> = {
 };
 
 export function KrishiAiChatbot() {
-  const { language, speechLocale } = useLanguage();
+  const { language, setLanguage, speechLocale } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   
-  // Settings & Audio config
-  const [hasKey, setHasKey] = useState(false);
-  const [tempKey, setTempKey] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
+  // Audio config
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   
   // Voice Input (Speech to Text)
@@ -65,12 +57,8 @@ export function KrishiAiChatbot() {
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Key State & Welcome message
+  // Initialize Welcome message
   useEffect(() => {
-    const key = getGeminiApiKey();
-    setHasKey(!!key);
-    if (key) setTempKey(key);
-
     const greeting = GREETINGS[language] || GREETINGS.en;
     setMessages([
       {
@@ -225,8 +213,7 @@ export function KrishiAiChatbot() {
       console.error("AI response error:", error);
       let errorText = "Sorry, I couldn't reach the AI model. Please verify your connection or try again.";
       if (error?.message === "API_KEY_MISSING") {
-        errorText = "Please enter your Google Gemini API Key in the settings gear ⚙️ to start chatting!";
-        setShowSettings(true);
+        errorText = "The Gemini API Key is missing. Please configure VITE_GEMINI_API_KEY in the .env file to start chatting! 🔑";
       } else if (error?.message?.includes("API_RESPONSE_ERROR_403")) {
         errorText = "Your API Key seems invalid or restricted. Please check your key settings. 🔑";
       }
@@ -270,12 +257,9 @@ export function KrishiAiChatbot() {
 
   return (
     <>
-      {/* FLOATING TRIGGER BUTTON */}
       <button
         onClick={() => {
           setIsOpen(!isOpen);
-          // If settings are shown and key exists, return to chat on open
-          if (hasKey) setShowSettings(false);
         }}
         aria-label="KrishiMitra AI Support"
         className={`fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full gradient-fresh text-primary-foreground shadow-glow flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 border border-white/20 cursor-pointer ${
@@ -298,9 +282,21 @@ export function KrishiAiChatbot() {
                 <h3 className="font-extrabold text-sm flex items-center gap-1.5 leading-none text-foreground">
                   KrishiMitra AI <span className="inline-block h-2 w-2 rounded-full bg-fresh animate-pulse" />
                 </h3>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                  {getRegionalLanguage(language)?.nativeLabel || "AI Assistant"}
-                </span>
+                <label className="inline-flex items-center gap-1 mt-1 text-[10px] text-muted-foreground font-semibold cursor-pointer">
+                  <Languages className="h-3 w-3 text-muted-foreground" />
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value as any)}
+                    className="bg-transparent text-[10px] font-bold outline-none cursor-pointer uppercase text-muted-foreground border-none p-0 focus:ring-0"
+                    aria-label="Select Language"
+                  >
+                    {INDIAN_LANGUAGES.map((lang) => (
+                      <option key={lang.code} value={lang.code} className="text-foreground bg-card">
+                        {lang.nativeLabel} ({lang.englishLabel})
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
             </div>
             
@@ -320,15 +316,6 @@ export function KrishiAiChatbot() {
                 {isAudioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               </button>
 
-              {/* Settings toggle */}
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                title="Configure Gemini API Key"
-                className={`p-2 rounded-full transition ${showSettings ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}
-              >
-                <Settings className="h-4 w-4" />
-              </button>
-
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 rounded-full text-muted-foreground hover:bg-muted"
@@ -340,79 +327,6 @@ export function KrishiAiChatbot() {
 
           {/* MAIN CONTAINER */}
           <div className="flex-1 relative overflow-hidden flex flex-col bg-background/50">
-            {/* SETTINGS PANEL (Gemini API Key configuration) */}
-            {showSettings ? (
-              <div className="absolute inset-0 z-10 p-5 bg-card flex flex-col animate-soft-fade">
-                <div className="flex items-center gap-2 mb-4 text-primary">
-                  <Key className="h-5 w-5" />
-                  <h4 className="font-extrabold text-base">Gemini API Configuration</h4>
-                </div>
-
-                <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
-                  KrishiDirect uses your Google Gemini API Key directly from your local browser to answer queries privately.
-                </p>
-
-                <div className="space-y-4 flex-1">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">
-                      Google Gemini API Key
-                    </label>
-                    <input
-                      type="password"
-                      value={tempKey}
-                      onChange={(e) => setTempKey(e.target.value)}
-                      placeholder="AIzaSy..."
-                      className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm font-mono focus:border-primary focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-secondary/50 border border-border flex gap-3 text-xs text-muted-foreground">
-                    <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      Don't have an API Key? Get one instantly for free from{" "}
-                      <a
-                        href="https://aistudio.google.com/"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary font-bold hover:underline"
-                      >
-                        Google AI Studio
-                      </a>.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-border flex items-center justify-between gap-3">
-                  {hasKey ? (
-                    <button
-                      onClick={handleDeleteKey}
-                      className="h-10 px-4 rounded-xl border border-destructive/20 text-destructive text-xs font-bold hover:bg-destructive/10 transition inline-flex items-center gap-1.5"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> Reset Key
-                    </button>
-                  ) : (
-                    <div />
-                  )}
-                  
-                  <div className="flex gap-2">
-                    {hasKey && (
-                      <button
-                        onClick={() => setShowSettings(false)}
-                        className="h-10 px-4 rounded-xl text-xs font-semibold hover:bg-muted text-muted-foreground"
-                      >
-                        Back
-                      </button>
-                    )}
-                    <button
-                      onClick={handleSaveKey}
-                      className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary-glow transition inline-flex items-center gap-1.5"
-                    >
-                      <Check className="h-3.5 w-3.5" /> Save Key
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
 
             {/* MESSAGE LIST */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3.5">

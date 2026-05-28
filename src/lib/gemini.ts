@@ -1,3 +1,4 @@
+import { createServerFn } from "@tanstack/react-start";
 import { products, farmers } from "./data";
 import { getRegionalLanguage } from "./i18n/languages";
 
@@ -5,27 +6,6 @@ export type ChatMessage = {
   role: "user" | "model";
   text: string;
 };
-
-// Retrieve API key from localStorage or env variable
-export function getGeminiApiKey(): string | null {
-  if (typeof window !== "undefined") {
-    const localKey = localStorage.getItem("krishi-gemini-key");
-    if (localKey) return localKey;
-  }
-  return (import.meta.env.VITE_GEMINI_API_KEY as string) || null;
-}
-
-export function saveGeminiApiKey(key: string) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("krishi-gemini-key", key);
-  }
-}
-
-export function removeGeminiApiKey() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("krishi-gemini-key");
-  }
-}
 
 // Generate the store context system prompt
 function buildSystemPrompt(langCode: string): string {
@@ -72,66 +52,87 @@ IMPORTANT INSTRUCTIONS:
 - If the user asks about something unrelated to farming, agriculture, or KrishiDirect, politely redirect them back to agricultural subjects.`;
 }
 
+// Server Function - runs exclusively on the backend server, securing the API key
+export const askGeminiServer = createServerFn({ method: "POST" })
+  .inputValidator((d: { queryText: string; history: ChatMessage[]; langCode: string }) => d)
+  .handler(async ({ data }) => {
+    const { queryText, history, langCode } = data;
+
+    // Read API key from server environment
+    const apiKey =
+      process.env.GEMINI_API_KEY ||
+      process.env.VITE_GEMINI_API_KEY ||
+      (import.meta.env.VITE_GEMINI_API_KEY as string);
+
+    if (!apiKey) {
+      throw new Error("API_KEY_MISSING");
+    }
+
+    const systemInstruction = buildSystemPrompt(langCode);
+
+    // Map the local message structure to the Gemini API format
+    const contents = [
+      ...history.map((msg) => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.text }],
+      })),
+      {
+        role: "user",
+        parts: [{ text: queryText }],
+      },
+    ];
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents,
+          systemInstruction: {
+            parts: [{ text: systemInstruction }],
+          },
+          tools: [{ googleSearch: {} }], // Enable real-time Google Search grounding
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 600,
+            topP: 0.95,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return "I've hit a rate limit or quota limit. Please wait a minute or check your Gemini API Key billing/usage limits! ⏳";
+        }
+        if (response.status === 400 || response.status === 403) {
+          return "Google Gemini API key error (400/403). Please verify that the GEMINI_API_KEY in your .env file is correct and has access to Gemini 3.5 Flash! 🔑";
+        }
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Gemini API Error details:", errorData);
+        throw new Error(`API_RESPONSE_ERROR_${response.status}`);
+      }
+
+      const resData = await response.json();
+      const candidateText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!candidateText) {
+        throw new Error("EMPTY_RESPONSE");
+      }
+
+      return candidateText.trim();
+    } catch (error: any) {
+      console.error("Error in askGeminiServer:", error);
+      throw error;
+    }
+  });
+
 export async function askGemini(
   queryText: string,
   history: ChatMessage[],
   langCode: string
 ): Promise<string> {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) {
-    throw new Error("API_KEY_MISSING");
-  }
-
-  const systemInstruction = buildSystemPrompt(langCode);
-
-  // Map the local message structure to the Gemini API format
-  const contents = [
-    ...history.map((msg) => ({
-      role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: msg.text }],
-    })),
-    {
-      role: "user",
-      parts: [{ text: queryText }],
-    },
-  ];
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: {
-          parts: [{ text: systemInstruction }],
-        },
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 600,
-          topP: 0.95,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Gemini API Error details:", errorData);
-      throw new Error(`API_RESPONSE_ERROR_${response.status}`);
-    }
-
-    const data = await response.json();
-    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!candidateText) {
-      throw new Error("EMPTY_RESPONSE");
-    }
-
-    return candidateText.trim();
-  } catch (error: any) {
-    console.error("Error in askGemini:", error);
-    throw error;
-  }
+  return askGeminiServer({ data: { queryText, history, langCode } });
 }
