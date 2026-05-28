@@ -10,6 +10,7 @@ import { seedIfEmpty } from "@/lib/seed";
 import { LanguageProvider } from "@/lib/language-context";
 import { useLanguage } from "@/lib/language-context";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
+import { KrishiAiChatbot } from "@/components/KrishiAiChatbot";
 
 function NotFoundComponent() {
   const { t } = useLanguage();
@@ -103,6 +104,7 @@ function RootComponent() {
           <WelcomeOverlay />
           <Outlet />
           <Footer />
+          <KrishiAiChatbot />
         </AuthGate>
       </LanguageProvider>
     </AuthProvider>
