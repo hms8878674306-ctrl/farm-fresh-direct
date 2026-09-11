@@ -9,7 +9,7 @@ export type ChatMessage = {
 
 // Generate the store context system prompt
 function buildSystemPrompt(langCode: string): string {
-  const langDetails = getRegionalLanguage(langCode);
+  const langDetails = getRegionalLanguage(langCode as LanguageCode);
   const langName = langDetails ? langDetails.englishLabel : "English";
   const langNative = langDetails ? langDetails.nativeLabel : "English";
 
