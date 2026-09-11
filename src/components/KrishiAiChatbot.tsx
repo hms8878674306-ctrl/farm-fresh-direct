@@ -215,27 +215,97 @@ export function KrishiAiChatbot() {
     }
   };
 
-  // Convert markdown-like response to clean HTML
+  // Convert markdown-like response (including tables & links) to formatted HTML
   const renderMessageContent = (text: string) => {
-    let html = text
+    // Escape basic HTML tags first for safety
+    let processed = text
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      // bold **text**
+      .replace(/>/g, "&gt;");
+
+    // Convert markdown links [Text](URL) -> <a href="URL" target="_blank" rel="noopener noreferrer">Text</a>
+    processed = processed.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline font-medium">$1</a>'
+    );
+
+    // Convert Markdown Tables
+    const lines = processed.split("\n");
+    let inTable = false;
+    let tableHtml = "";
+    const resultLines: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      // Table row check
+      if (line.startsWith("|") && line.endsWith("|")) {
+        // Skip separator row | --- | --- |
+        if (line.includes("---")) continue;
+
+        const cells = line
+          .split("|")
+          .slice(1, -1)
+          .map((c) => c.trim());
+
+        if (!inTable) {
+          inTable = true;
+          tableHtml = `<div class="my-2.5 overflow-x-auto rounded-lg border border-border bg-card/60"><table class="w-full text-xs text-left border-collapse">`;
+          // Header row
+          tableHtml += `<thead class="bg-muted font-bold text-foreground"><tr>${cells
+            .map((c) => `<th class="p-2 border-b border-border">${c}</th>`)
+            .join("")}</tr></thead><tbody>`;
+        } else {
+          // Data row
+          tableHtml += `<tr class="border-b border-border/50 hover:bg-muted/40">${cells
+            .map((c) => `<td class="p-2">${c}</td>`)
+            .join("")}</tr>`;
+        }
+      } else {
+        if (inTable) {
+          inTable = false;
+          tableHtml += `</tbody></table></div>`;
+          resultLines.push(tableHtml);
+          tableHtml = "";
+        }
+        resultLines.push(line);
+      }
+    }
+    if (inTable) {
+      tableHtml += `</tbody></table></div>`;
+      resultLines.push(tableHtml);
+    }
+
+    processed = resultLines.join("\n");
+
+    // Formats: bold **text**, bullet points, headers
+    let html = processed
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      // lists * item or - item
+      .replace(/^\#\#\#\s+(.*?)$/gm, "<h4 class='font-bold text-sm text-foreground mt-2 mb-1'>$1</h4>")
+      .replace(/^\#\#\s+(.*?)$/gm, "<h3 class='font-extrabold text-sm text-primary mt-2.5 mb-1'>$1</h3>")
       .replace(/^\s*[-*]\s+(.*?)$/gm, "• $1")
-      // new lines to br
       .replace(/\n/g, "<br />");
-      
-    return <div dangerouslySetInnerHTML={{ __html: html }} className="text-sm leading-relaxed" />;
+
+    return <div dangerouslySetInnerHTML={{ __html: html }} className="text-sm leading-relaxed space-y-1" />;
   };
 
   const quickPrompts = [
-    { text: language === "hi" ? "आज ताज़ा क्या है? 🥬" : "What is fresh today? 🥬", query: "What is fresh today? Show me listed items and who sells them." },
-    { text: language === "hi" ? "जैविक फसलें दिखाएं 🌿" : "Show organic items 🌿", query: "Are there any organic certified items available?" },
-    { text: language === "hi" ? "किराया/डिलीवरी 🚚" : "Delivery details 🚚", query: "How does payment and delivery work on KrishiDirect?" },
-    { text: language === "hi" ? "रमेश पटेल कौन है? 👨‍🌾" : "About Ramesh Patel 👨‍🌾", query: "Tell me about Ramesh Patel, what he sells, and his location." }
+    {
+      text: language === "hi" ? "सोयाबीन मंडी भाव 💰" : "Soybean Price 💰",
+      query: language === "hi" ? "मध्य प्रदेश में सोयाबीन का आज का मंडी भाव क्या है?" : "What is the current price of soybean in Madhya Pradesh?",
+    },
+    {
+      text: language === "hi" ? "गेहूं 7-दिन का ट्रेंड 📈" : "Wheat Price Trend 📈",
+      query: language === "hi" ? "पिछले 7 दिनों में गेहूं के दामों का क्या ट्रेंड रहा है?" : "Show me the wheat price trend for the last 7 days.",
+    },
+    {
+      text: language === "hi" ? "भोपाल मौसम व सिंचाई 🌤️" : "Bhopal Weather & Irrigation 🌤️",
+      query: language === "hi" ? "भोपाल में आज मौसम कैसा रहेगा और क्या मुझे फसल सिंचाई करनी चाहिए?" : "What is the weather in Bhopal today and should I irrigate my crop?",
+    },
+    {
+      text: language === "hi" ? "आज ताज़ा क्या है? 🥬" : "What is fresh today? 🥬",
+      query: "What is fresh today? Show me listed items and who sells them.",
+    },
   ];
 
   return (
