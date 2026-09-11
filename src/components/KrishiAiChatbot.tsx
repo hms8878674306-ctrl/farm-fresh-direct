@@ -155,23 +155,6 @@ export function KrishiAiChatbot() {
     }
   };
 
-  const handleSaveKey = () => {
-    const trimmed = tempKey.trim();
-    if (!trimmed) {
-      alert("Please enter a valid Gemini API Key.");
-      return;
-    }
-    saveGeminiApiKey(trimmed);
-    setHasKey(true);
-    setShowSettings(false);
-  };
-
-  const handleDeleteKey = () => {
-    removeGeminiApiKey();
-    setHasKey(false);
-    setTempKey("");
-    setShowSettings(true);
-  };
 
   const handleSendMessage = async (customText?: string) => {
     const textToSend = (customText || input).trim();
@@ -213,7 +196,7 @@ export function KrishiAiChatbot() {
       console.error("AI response error:", error);
       let errorText = "Sorry, I couldn't reach the AI model. Please verify your connection or try again.";
       if (error?.message === "API_KEY_MISSING") {
-        errorText = "The Gemini API Key is missing. Please configure VITE_GEMINI_API_KEY in the .env file to start chatting! 🔑";
+        errorText = "The Gemini API Key is missing. Please configure GEMINI_API_KEY in the .env file to start chatting! 🔑";
       } else if (error?.message?.includes("API_RESPONSE_ERROR_403")) {
         errorText = "Your API Key seems invalid or restricted. Please check your key settings. 🔑";
       }
