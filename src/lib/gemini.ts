@@ -82,7 +82,7 @@ export const askGeminiServer = createServerFn({ method: "POST" })
       },
     ];
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
     try {
       const response = await fetch(url, {
@@ -95,7 +95,6 @@ export const askGeminiServer = createServerFn({ method: "POST" })
           systemInstruction: {
             parts: [{ text: systemInstruction }],
           },
-          tools: [{ googleSearch: {} }], // Enable real-time Google Search grounding
           generationConfig: {
             temperature: 0.4,
             maxOutputTokens: 600,
@@ -109,7 +108,7 @@ export const askGeminiServer = createServerFn({ method: "POST" })
           return "I've hit a rate limit or quota limit. Please wait a minute or check your Gemini API Key billing/usage limits! ⏳";
         }
         if (response.status === 400 || response.status === 403) {
-          return "Google Gemini API key error (400/403). Please verify that the GEMINI_API_KEY in your .env file is correct and has access to Gemini 3.5 Flash! 🔑 Make sure you copied the full key from Google AI Studio.";
+          return "Google Gemini API key error (400/403). Please verify that the GEMINI_API_KEY in your .env file is correct and has access to Gemini 2.0 Flash! 🔑 Make sure you copied the full key from Google AI Studio.";
         }
         const errorData = await response.json().catch(() => ({}));
         console.error("Gemini API Error details:", errorData);
