@@ -48,7 +48,9 @@ IMPORTANT INSTRUCTIONS:
 - Recommend specific products based on what they ask. For example, if they want tomatoes, point them to Ramesh Patel's Vine Tomatoes.
 - Inform users that they can negotiate prices directly with farmers by clicking "Negotiate" or "Chat" on the product pages.
 - Keep replies succinct and engaging (aim for 2-3 sentences), so they can easily be read on a mobile screen and spoken aloud using Text-to-Speech engines.
-- Do not make up products or farmers that are not listed in the real-time store catalog above.
+- LIVE PRICE LOOKUPS: You have access to Google Search. When a user asks about the price of ANY crop or vegetable (whether or not it is in the store catalog), use Google Search to find the current market/mandi price in India (in ₹). Search for terms like "[crop name] mandi price today India" or "[crop name] current price per kg India". Always show the live searched price and mention it is the current market rate.
+- For products IN our store catalog, show BOTH the KrishiDirect price (from the catalog above) AND the current market price you find via search, so users can see they are getting a fair deal.
+- For products NOT in our store catalog, just show the current live mandi price from search results.
 - If the user asks about something unrelated to farming, agriculture, or KrishiDirect, politely redirect them back to agricultural subjects.`;
 }
 
@@ -82,7 +84,7 @@ export const askGeminiServer = createServerFn({ method: "POST" })
       },
     ];
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     try {
       const response = await fetch(url, {
@@ -95,9 +97,10 @@ export const askGeminiServer = createServerFn({ method: "POST" })
           systemInstruction: {
             parts: [{ text: systemInstruction }],
           },
+          tools: [{ google_search: {} }], // Enable Google Search grounding for live market prices
           generationConfig: {
             temperature: 0.4,
-            maxOutputTokens: 600,
+            maxOutputTokens: 700,
             topP: 0.95,
           },
         }),
@@ -108,7 +111,7 @@ export const askGeminiServer = createServerFn({ method: "POST" })
           return "I've hit a rate limit or quota limit. Please wait a minute or check your Gemini API Key billing/usage limits! ⏳";
         }
         if (response.status === 400 || response.status === 403) {
-          return "Google Gemini API key error (400/403). Please verify that the GEMINI_API_KEY in your .env file is correct and has access to Gemini 2.0 Flash! 🔑 Make sure you copied the full key from Google AI Studio.";
+          return "Google Gemini API key error (400/403). Please verify that the GEMINI_API_KEY in your .env file is correct and has access to Gemini 2.5 Flash! 🔑 Make sure you copied the full key from Google AI Studio.";
         }
         const errorData = await response.json().catch(() => ({}));
         console.error("Gemini API Error details:", errorData);
