@@ -197,8 +197,8 @@ export function KrishiAiChatbot() {
       let errorText = "Sorry, I couldn't reach the AI model. Please verify your connection or try again.";
       if (error?.message === "API_KEY_MISSING") {
         errorText = "The Gemini API Key is missing. Please configure GEMINI_API_KEY in the .env file to start chatting! 🔑";
-      } else if (error?.message?.includes("API_RESPONSE_ERROR_403")) {
-        errorText = "Your API Key seems invalid or restricted. Please check your key settings. 🔑";
+      } else if (error?.message?.includes("API_RESPONSE_ERROR_403") || error?.message?.includes("API_RESPONSE_ERROR_400")) {
+        errorText = "Google Gemini API key error (400/403). Please verify that the GEMINI_API_KEY in your .env file is correct and has access to Gemini 2.5 Flash! 🔑";
       }
       
       setMessages((prev) => [
