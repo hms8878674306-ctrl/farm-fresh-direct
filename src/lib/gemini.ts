@@ -109,7 +109,7 @@ export const askGeminiServer = createServerFn({ method: "POST" })
           return "I've hit a rate limit or quota limit. Please wait a minute or check your Gemini API Key billing/usage limits! ⏳";
         }
         if (response.status === 400 || response.status === 403) {
-          return "Google Gemini API key error (400/403). Please verify that the GEMINI_API_KEY in your .env file is correct and has access to Gemini 3.5 Flash! 🔑";
+          return "Google Gemini API key error (400/403). Please verify that the GEMINI_API_KEY in your .env file is correct and has access to Gemini 3.5 Flash! 🔑 Make sure you copied the full key from Google AI Studio.";
         }
         const errorData = await response.json().catch(() => ({}));
         console.error("Gemini API Error details:", errorData);
