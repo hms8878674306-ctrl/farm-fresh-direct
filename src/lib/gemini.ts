@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { products, farmers } from "./data";
-import { getRegionalLanguage } from "./i18n/languages";
+import { getRegionalLanguage, type LanguageCode } from "./i18n/languages";
 
 export type ChatMessage = {
   role: "user" | "model";
