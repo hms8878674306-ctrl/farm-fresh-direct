@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { products, farmers } from "./data";
-import { getRegionalLanguage } from "./i18n/languages";
+import { getRegionalLanguage, type LanguageCode } from "./i18n/languages";
 
 export type ChatMessage = {
   role: "user" | "model";
@@ -9,7 +9,7 @@ export type ChatMessage = {
 
 // Generate the store context system prompt
 function buildSystemPrompt(langCode: string): string {
-  const langDetails = getRegionalLanguage(langCode);
+  const langDetails = getRegionalLanguage(langCode as LanguageCode);
   const langName = langDetails ? langDetails.englishLabel : "English";
   const langNative = langDetails ? langDetails.nativeLabel : "English";
 
